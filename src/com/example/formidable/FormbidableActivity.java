@@ -40,7 +40,8 @@ public class FormbidableActivity extends Activity {
         CouchDbConnector events = client.createConnector("events", true);
         
         String id = newId();
-        Event created = new Event();     
+        Event created = new Event();
+        created.put("name", "Angshu");
 		events.create(id, created);
 		Event retrieved = events.find(Event.class, id);
 		server.close();

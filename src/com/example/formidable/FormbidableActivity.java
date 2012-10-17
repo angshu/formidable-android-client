@@ -50,6 +50,13 @@ public class FormbidableActivity extends Activity {
         WebView myWebView = (WebView) findViewById(R.id.webview);
         WebSettings webSettings = myWebView.getSettings();
         webSettings.setJavaScriptEnabled(true);
+        
+        webSettings.setDatabaseEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setGeolocationDatabasePath("/data/data/com.example.formidable/databases");
+        webSettings.setGeolocationEnabled(true);
+
+        
         myWebView.loadUrl("http://enketo.org/launch?server=http%3A%2F%2Fformhub.org%2Fwho_forms");
     }
 

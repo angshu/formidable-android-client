@@ -5,22 +5,18 @@ import java.util.UUID;
 
 import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
-import org.ektorp.http.HttpClient;
 import org.ektorp.impl.StdCouchDbInstance;
-import org.ektorp.support.CouchDbDocument;
 
-import com.couchbase.touchdb.TDDatabase;
-import com.couchbase.touchdb.TDRevision;
-import com.couchbase.touchdb.TDServer;
-import com.couchbase.touchdb.ektorp.TouchDBHttpClient;
-import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
-
-import android.os.Bundle;
 import android.app.Activity;
+import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+
+import com.couchbase.touchdb.TDServer;
+import com.couchbase.touchdb.ektorp.TouchDBHttpClient;
+import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
 
 public class FormbidableActivity extends Activity {
 	

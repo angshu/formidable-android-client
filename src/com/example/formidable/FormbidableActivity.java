@@ -61,7 +61,7 @@ public class FormbidableActivity extends Activity {
 
 	private CouchDbConnector startClient() {
 		CouchDbInstance client = new StdCouchDbInstance(new TouchDBHttpClient(localServer));  
-        CouchDbConnector events = client.createConnector("events", true);		
+        CouchDbConnector events = client.createConnector("events", true);	
 		beginReplicating(client);
 		return events;
 	}
@@ -84,7 +84,7 @@ public class FormbidableActivity extends Activity {
 	private void beginReplicating(CouchDbInstance client) {		
 		ReplicationCommand push = new ReplicationCommand.Builder()
 		.source("events")
-		.target("http://10.4.3.171:5984/events")
+		.target(Messages.getString("FormbidableActivity.serverURL"))
 		.continuous(true)
 		.build();
 	

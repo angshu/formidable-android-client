@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
+import org.ektorp.ReplicationCommand;
 import org.ektorp.impl.StdCouchDbInstance;
 
 import android.app.Activity;
@@ -30,13 +31,10 @@ public class FormbidableActivity extends Activity {
 	
 	private static final String TAG = "MainActivity";
 	private TDServer server;
-	private TDReplicator replicator;
-	private TDDatabase database;
-
-    @Override
+	
+	@Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
+        super.onCreate(savedInstanceState);        
         server = startServer();
         
         CouchDbInstance client = new StdCouchDbInstance(new TouchDBHttpClient(server));  
@@ -48,7 +46,7 @@ public class FormbidableActivity extends Activity {
 		events.create(id, created);
 		Event retrieved = events.find(Event.class, id);
 		
-		beginReplicating();
+		beginReplicating(client);
 		//server.close();
         
         setContentView(R.layout.activity_main);
@@ -81,14 +79,14 @@ public class FormbidableActivity extends Activity {
 		return UUID.randomUUID().toString();
 	}
 	
-	private void beginReplicating() {
-		database = server.getDatabaseNamed("events");
-		try {
-			replicator = database.getReplicator(new URL("http://admin:password@localhost:5984"), true, true);
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
-		replicator.beginReplicating();
+	private void beginReplicating(CouchDbInstance client) {		
+		ReplicationCommand push = new ReplicationCommand.Builder()
+		.source("events")
+		.target("http://10.4.3.171:5984/events")
+		.continuous(true)
+		.build();
+	
+		client.replicate(push);
 	}
 
     @Override

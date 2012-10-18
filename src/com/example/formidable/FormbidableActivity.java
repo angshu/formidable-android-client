@@ -1,6 +1,8 @@
 package com.example.formidable;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.UUID;
 
 import org.ektorp.CouchDbConnector;
@@ -14,8 +16,10 @@ import android.view.Menu;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
+import com.couchbase.touchdb.TDDatabase;
 import com.couchbase.touchdb.TDServer;
 import com.couchbase.touchdb.ektorp.TouchDBHttpClient;
+import com.couchbase.touchdb.replicator.TDReplicator;
 import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
 
 public class FormbidableActivity extends Activity {
@@ -25,12 +29,15 @@ public class FormbidableActivity extends Activity {
 	}
 	
 	private static final String TAG = "MainActivity";
+	private TDServer server;
+	private TDReplicator replicator;
+	private TDDatabase database;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        TDServer server = startServer();
+        server = startServer();
         
         CouchDbInstance client = new StdCouchDbInstance(new TouchDBHttpClient(server));  
         CouchDbConnector events = client.createConnector("events", true);
@@ -40,7 +47,9 @@ public class FormbidableActivity extends Activity {
         created.put("name", "Angshu");
 		events.create(id, created);
 		Event retrieved = events.find(Event.class, id);
-		server.close();
+		
+		beginReplicating();
+		//server.close();
         
         setContentView(R.layout.activity_main);
         WebView myWebView = (WebView) findViewById(R.id.webview);
@@ -64,11 +73,22 @@ public class FormbidableActivity extends Activity {
         } catch (IOException e) {
             Log.e(TAG, "Error starting TouchDB Server.", e);
         }
+        //startReplicating(server);
 		return server;
 	}
 
 	private String newId() {
 		return UUID.randomUUID().toString();
+	}
+	
+	private void beginReplicating() {
+		database = server.getDatabaseNamed("events");
+		try {
+			replicator = database.getReplicator(new URL("http://admin:password@localhost:5984"), true, true);
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+		replicator.beginReplicating();
 	}
 
     @Override

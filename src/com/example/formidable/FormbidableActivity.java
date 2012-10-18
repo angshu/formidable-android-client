@@ -30,24 +30,21 @@ public class FormbidableActivity extends Activity {
 	}
 	
 	private static final String TAG = "MainActivity";
-	private TDServer server;
+	private TDServer localServer;
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);        
-        server = startServer();
-        
-        CouchDbInstance client = new StdCouchDbInstance(new TouchDBHttpClient(server));  
-        CouchDbConnector events = client.createConnector("events", true);
+        localServer = startServer();    
+        CouchDbConnector events = startClient();
         
         String id = newId();
         Event created = new Event();
         created.put("name", "Angshu");
 		events.create(id, created);
 		Event retrieved = events.find(Event.class, id);
-		
-		beginReplicating(client);
-		//server.close();
+
+		//localServer.close();
         
         setContentView(R.layout.activity_main);
         WebView myWebView = (WebView) findViewById(R.id.webview);
@@ -58,10 +55,16 @@ public class FormbidableActivity extends Activity {
         webSettings.setDomStorageEnabled(true);
         webSettings.setGeolocationDatabasePath("/data/data/com.example.formidable/databases");
         webSettings.setGeolocationEnabled(true);
-
         
         myWebView.loadUrl("http://enketo.org/launch?server=http%3A%2F%2Fformhub.org%2Fwho_forms");
     }
+
+	private CouchDbConnector startClient() {
+		CouchDbInstance client = new StdCouchDbInstance(new TouchDBHttpClient(localServer));  
+        CouchDbConnector events = client.createConnector("events", true);		
+		beginReplicating(client);
+		return events;
+	}
 
 	private TDServer startServer() {
 		TDServer server = null;
@@ -71,7 +74,6 @@ public class FormbidableActivity extends Activity {
         } catch (IOException e) {
             Log.e(TAG, "Error starting TouchDB Server.", e);
         }
-        //startReplicating(server);
 		return server;
 	}
 

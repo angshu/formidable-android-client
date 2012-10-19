@@ -3,10 +3,13 @@ package com.example.formidable;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.codehaus.jackson.JsonNode;
 import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
 import org.ektorp.ReplicationCommand;
@@ -50,10 +53,19 @@ public class FormbidableActivity extends Activity {
         String id = newId();
         Event created = new Event();
         created.put("name", "Angshu");
+        created.put("surname", "sarkar");
 		events.create(id, created);
 		Event retrieved = events.find(Event.class, id);
 		ViewQuery view = new ViewQuery().designDocId("_design/records").viewName("latest");
-		List<Event> result = events.queryView(view, Event.class);
+		ViewResult result = events.queryView(view);
+		JsonNode valueNode = result.getRows().get(0).getValueAsNode();
+		Iterator<String> fieldNames = valueNode.getFieldNames();
+		
+		while (fieldNames.hasNext()) {
+			String field = fieldNames.next();
+			JsonNode jsonNode = valueNode.get(field);
+			System.out.println(String.format("field %s = %s", field, jsonNode.asText()));	
+		}
 		//localServer.close();
         
         setContentView(R.layout.activity_main);
@@ -75,14 +87,23 @@ public class FormbidableActivity extends Activity {
 		view.setMapReduceBlocks(new TDViewMapBlock() {
 			@Override
 			public void map(Map<String, Object> document, TDViewMapEmitBlock emitter) {
-				emitter.emit(null, document);				
+				emitter.emit(document.get("_id"), document.get("data"));				
 			}
-		  }, new TDViewReduceBlock() {
+		  }
+		, new TDViewReduceBlock() {
 				@Override
 				public Object reduce(List<Object> keys, List<Object> values, boolean rereduce) {
-					return values.get(0);
+					return values.get(values.size() - 1);
+//					Map<String, Object> map = (Map<String, Object>) values.get(values.size() - 1);
+//					for(String foo : map.keySet()) {
+//						Object value = map.get(foo);
+//						System.out.println("value="+value);
+//					}
+//					return values.get(values.size() - 1);
+					
+					
 				}
-		  }, "1.0");
+		  }, newId());
 		return view;
 	}
 

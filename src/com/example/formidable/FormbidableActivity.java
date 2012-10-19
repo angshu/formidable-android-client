@@ -3,11 +3,16 @@ package com.example.formidable;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
 import org.ektorp.ReplicationCommand;
+import org.ektorp.ViewQuery;
+import org.ektorp.ViewResult;
+import org.ektorp.ViewResult.Row;
 import org.ektorp.impl.StdCouchDbInstance;
 
 import android.app.Activity;
@@ -19,6 +24,10 @@ import android.webkit.WebView;
 
 import com.couchbase.touchdb.TDDatabase;
 import com.couchbase.touchdb.TDServer;
+import com.couchbase.touchdb.TDView;
+import com.couchbase.touchdb.TDViewMapBlock;
+import com.couchbase.touchdb.TDViewMapEmitBlock;
+import com.couchbase.touchdb.TDViewReduceBlock;
 import com.couchbase.touchdb.ektorp.TouchDBHttpClient;
 import com.couchbase.touchdb.replicator.TDReplicator;
 import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
@@ -35,7 +44,7 @@ public class FormbidableActivity extends Activity {
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);        
-        localServer = startServer();    
+        startServer();    
         CouchDbConnector events = startClient();
         
         String id = newId();
@@ -43,7 +52,8 @@ public class FormbidableActivity extends Activity {
         created.put("name", "Angshu");
 		events.create(id, created);
 		Event retrieved = events.find(Event.class, id);
-
+		ViewQuery view = new ViewQuery().designDocId("_design/records").viewName("latest");
+		List<Event> result = events.queryView(view, Event.class);
 		//localServer.close();
         
         setContentView(R.layout.activity_main);
@@ -59,6 +69,23 @@ public class FormbidableActivity extends Activity {
         myWebView.loadUrl("http://enketo.org/launch?server=http%3A%2F%2Fformhub.org%2Fwho_forms");
     }
 
+	private TDView startViews() {
+		TDDatabase db = localServer.getDatabaseNamed("events");
+		TDView view = db.getViewNamed("records/latest");
+		view.setMapReduceBlocks(new TDViewMapBlock() {
+			@Override
+			public void map(Map<String, Object> document, TDViewMapEmitBlock emitter) {
+				emitter.emit(null, document);				
+			}
+		  }, new TDViewReduceBlock() {
+				@Override
+				public Object reduce(List<Object> keys, List<Object> values, boolean rereduce) {
+					return values.get(0);
+				}
+		  }, "1.0");
+		return view;
+	}
+
 	private CouchDbConnector startClient() {
 		CouchDbInstance client = new StdCouchDbInstance(new TouchDBHttpClient(localServer));  
         CouchDbConnector events = client.createConnector("events", true);	
@@ -66,15 +93,14 @@ public class FormbidableActivity extends Activity {
 		return events;
 	}
 
-	private TDServer startServer() {
-		TDServer server = null;
+	private void startServer() {
         String filesDir = getFilesDir().getAbsolutePath();
         try {
-            server = new TDServer(filesDir);           
+            localServer = new TDServer(filesDir);
+            startViews();
         } catch (IOException e) {
             Log.e(TAG, "Error starting TouchDB Server.", e);
         }
-		return server;
 	}
 
 	private String newId() {

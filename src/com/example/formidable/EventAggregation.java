@@ -1,5 +1,6 @@
 package com.example.formidable;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -12,33 +13,10 @@ import com.couchbase.touchdb.TDViewReduceBlock;
 public class EventAggregation {
 
 	public void setMapReduceBlocksFor(TDView view) {
-		view.setMapReduceBlocks(mapper(), reducer(), getId());	
+		view.setMapReduceBlocks(map(), reduce(), getId());	
 	}
 	
-	private TDViewReduceBlock reducer() {
-		return new TDViewReduceBlock() {
-			@Override
-			public Object reduce(List<Object> keys, List<Object> values, boolean rereduce) {
-				Map<String, Object> mostRecent = null;
-				int mostRecentEpoch = 0;
-				
-				for(Object next : values) {
-					Map<String, Object> nextMap = (Map<String, Object>) next;
-					
-					try {
-						int nextEpoch = (Integer) nextMap.get("epoch");
-						if(nextEpoch > mostRecentEpoch) {
-							mostRecentEpoch = nextEpoch;
-							mostRecent = nextMap;
-						}
-					} catch(Exception e) {}
-				}
-				return mostRecent;
-			}
-		};
-	}
-
-	private TDViewMapBlock mapper() {
+	private TDViewMapBlock map() {
 		return new TDViewMapBlock() {
 			@Override
 			public void map(Map<String, Object> document, TDViewMapEmitBlock emitter) {
@@ -46,7 +24,34 @@ public class EventAggregation {
 			}			
 		};
 	}
+	
+	private TDViewReduceBlock reduce() {
+		return new TDViewReduceBlock() {
+			@Override
+			public Object reduce(List<Object> keys, List<Object> values, boolean rereduce) {
+				Map<String, Event> currentEvents = new HashMap<String, Event>();
+				Map<String, Object> currentDocuments = new HashMap<String, Object>();
+				
+				for(Object document : values) {
+					Event event = hydrateEvent((Map<String, Object>) document);
+					
+					if(!currentEvents.containsKey(event.getRecordId())
+							|| event.isAfter(currentEvents.get(event.getRecordId()))) {
+						currentEvents.put(event.getRecordId(), event);
+						currentDocuments.put(event.getRecordId(), document);
+					}
+				}
+				return currentDocuments;
+			}
+		};
+	}
 
+	private Event hydrateEvent(Map<String, Object> document) {
+		Event event = new Event((Integer) document.get("epoch"), (String) document.get("recordId"));
+		event.putAll((Map<String, Object>) document.get("data"));
+		return event;
+	}
+	
 	private String getId() {
 		return UUID.randomUUID().toString();
 	}

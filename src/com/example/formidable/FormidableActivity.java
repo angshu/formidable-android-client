@@ -51,14 +51,12 @@ public class FormidableActivity extends Activity {
         
 		ViewQuery view = new ViewQuery().designDocId("_design/records").viewName("latest");
 		ViewResult result = events.queryView(view);
-		JsonNode valueNode = result.getRows().get(0).getValueAsNode();
-		Iterator<String> fieldNames = valueNode.getFieldNames();
 		
-		while (fieldNames.hasNext()) {
-			String field = fieldNames.next();
-			JsonNode jsonNode = valueNode.get(field);
-			String value = jsonNode.asText();
-			//System.out.println(String.format("field %s = %s", field, value));	
+		for( Row record : result.getRows()) {
+			JsonNode data = record.getValueAsNode().get(recordId).get("data");
+			JsonNode surname = data.get("surname");
+			JsonNode name = data.get("name");
+			System.out.println(String.format("Name: %s %s", name.getTextValue(), surname.getTextValue()));
 		}
 		//localServer.close();
         

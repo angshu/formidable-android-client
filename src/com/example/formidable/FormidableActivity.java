@@ -52,7 +52,7 @@ public class FormidableActivity extends Activity {
 		ViewQuery view = new ViewQuery().designDocId("_design/records").viewName("latest");
 		ViewResult result = events.queryView(view);
 		
-		for( Row record : result.getRows()) {
+		for(Row record : result.getRows()) {
 			JsonNode data = record.getValueAsNode().get(recordId).get("data");
 			JsonNode surname = data.get("surname");
 			JsonNode name = data.get("name");

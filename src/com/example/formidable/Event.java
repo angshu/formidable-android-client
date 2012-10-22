@@ -37,12 +37,4 @@ public class Event extends CouchDbDocument {
 	public void put(String key, String value) {
 		data.put(key, value);
 	}
-
-	public void putAll(Map<String, Object> data) {
-		this.data.putAll(data);
-	}
-
-	public boolean isAfter(Event event) {
-		return this.epoch > event.epoch;
-	}
 }

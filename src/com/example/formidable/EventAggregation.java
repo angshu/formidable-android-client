@@ -29,27 +29,32 @@ public class EventAggregation {
 		return new TDViewReduceBlock() {
 			@Override
 			public Object reduce(List<Object> keys, List<Object> values, boolean rereduce) {
-				Map<String, Event> currentEvents = new HashMap<String, Event>();
-				Map<String, Object> currentDocuments = new HashMap<String, Object>();
+				Map<String, Object> records = new HashMap<String, Object>();
 				
 				for(Object document : values) {
-					Event event = hydrateEvent((Map<String, Object>) document);
-					
-					if(!currentEvents.containsKey(event.getRecordId())
-							|| event.isAfter(currentEvents.get(event.getRecordId()))) {
-						currentEvents.put(event.getRecordId(), event);
-						currentDocuments.put(event.getRecordId(), document);
-					}
+					Map<String, Object> candidate = (Map<String, Object>) document;
+					Map<String, Object> current = (Map<String, Object>) records.get((String) candidate.get("recordId"));	
+					records.put((String) candidate.get("recordId"), merge(current, candidate));
 				}
-				return currentDocuments;
+				return records;
+			}
+
+			private Map<String, Object> merge(
+						Map<String, Object> current,
+						Map<String, Object> candidate) {
+				if(current == null || isBefore(current, candidate)) {
+					return candidate;
+				} else {
+					return current;
+				}
+			}
+
+			private boolean isBefore(
+					Map<String, Object> a,
+					Map<String, Object> b) {
+				return (Integer) a.get("epoch") < (Integer) b.get("epoch");
 			}
 		};
-	}
-
-	private Event hydrateEvent(Map<String, Object> document) {
-		Event event = new Event((Integer) document.get("epoch"), (String) document.get("recordId"));
-		event.putAll((Map<String, Object>) document.get("data"));
-		return event;
 	}
 	
 	private String getId() {

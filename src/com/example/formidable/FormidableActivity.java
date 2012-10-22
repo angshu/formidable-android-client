@@ -5,8 +5,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.codehaus.jackson.JsonNode;
@@ -28,9 +26,6 @@ import android.webkit.WebView;
 import com.couchbase.touchdb.TDDatabase;
 import com.couchbase.touchdb.TDServer;
 import com.couchbase.touchdb.TDView;
-import com.couchbase.touchdb.TDViewMapBlock;
-import com.couchbase.touchdb.TDViewMapEmitBlock;
-import com.couchbase.touchdb.TDViewReduceBlock;
 import com.couchbase.touchdb.ektorp.TouchDBHttpClient;
 import com.couchbase.touchdb.replicator.TDReplicator;
 import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
@@ -43,19 +38,17 @@ public class FormidableActivity extends Activity {
 	
 	private static final String TAG = "MainActivity";
 	private TDServer localServer;
+	CouchDbConnector events;
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);        
-        startServer();    
-        CouchDbConnector events = startClient();
+        initialize(savedInstanceState);
         
-        String id = newId();
-        Event created = new Event();
-        created.put("name", "Angshu");
-        created.put("surname", "sarkar");
-		events.create(id, created);
-		Event retrieved = events.find(Event.class, id);
+        String recordId = newId();
+        createEvent(2, recordId, "Angshu", "Sakar");
+        createEvent(1, recordId, "Chris", "Ford");
+        createEvent(3, recordId, "Pulkit", "Bhuwalka");
+        
 		ViewQuery view = new ViewQuery().designDocId("_design/records").viewName("latest");
 		ViewResult result = events.queryView(view);
 		JsonNode valueNode = result.getRows().get(0).getValueAsNode();
@@ -64,7 +57,8 @@ public class FormidableActivity extends Activity {
 		while (fieldNames.hasNext()) {
 			String field = fieldNames.next();
 			JsonNode jsonNode = valueNode.get(field);
-			//System.out.println(String.format("field %s = %s", field, jsonNode.asText()));	
+			String value = jsonNode.asText();
+			//System.out.println(String.format("field %s = %s", field, value));	
 		}
 		//localServer.close();
         
@@ -81,37 +75,23 @@ public class FormidableActivity extends Activity {
         myWebView.loadUrl("http://enketo.org/launch?server=http%3A%2F%2Fformhub.org%2Fwho_forms");
     }
 
-	private TDView startViews() {
-		TDDatabase db = localServer.getDatabaseNamed("events");
-		TDView view = db.getViewNamed("records/latest");
-		view.setMapReduceBlocks(new TDViewMapBlock() {
-			@Override
-			public void map(Map<String, Object> document, TDViewMapEmitBlock emitter) {
-				emitter.emit(document.get("_id"), document.get("data"));				
-			}
-		  }
-		, new TDViewReduceBlock() {
-				@Override
-				public Object reduce(List<Object> keys, List<Object> values, boolean rereduce) {
-					return values.get(values.size() - 1);
-//					Map<String, Object> map = (Map<String, Object>) values.get(values.size() - 1);
-//					for(String foo : map.keySet()) {
-//						Object value = map.get(foo);
-//						System.out.println("value="+value);
-//					}
-//					return values.get(values.size() - 1);
-					
-					
-				}
-		  }, newId());
-		return view;
+	private void initialize(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);        
+        startServer();    
+        startClient();
 	}
 
-	private CouchDbConnector startClient() {
+	private void createEvent(int epoch, String recordId, String givenName, String familyName) {
+		Event event = new Event(epoch, recordId);
+		event.put("name", givenName);
+		event.put("surname", familyName);
+		events.create(newId(), event);
+	}
+
+	private void startClient() {
 		CouchDbInstance client = new StdCouchDbInstance(new TouchDBHttpClient(localServer));  
-        CouchDbConnector events = client.createConnector("events", true);	
+        events = client.createConnector("events", true);	
 		beginReplicating(client);
-		return events;
 	}
 
 	private void startServer() {
@@ -123,6 +103,13 @@ public class FormidableActivity extends Activity {
             Log.e(TAG, "Error starting TouchDB Server.", e);
         }
 	}
+	
+	private TDView startViews() {
+		TDDatabase db = localServer.getDatabaseNamed("events");
+		TDView view = db.getViewNamed("records/latest");
+		view.setMapReduceBlocks(new EventMap(), new EventReduce(), newId());
+		return view;
+	}
 
 	private String newId() {
 		return UUID.randomUUID().toString();
@@ -130,10 +117,10 @@ public class FormidableActivity extends Activity {
 	
 	private void beginReplicating(CouchDbInstance client) {		
 		ReplicationCommand push = new ReplicationCommand.Builder()
-		.source("events")
-		.target(Messages.getString("FormbidableActivity.serverURL"))
-		.continuous(true)
-		.build();
+			.source("events")
+			.target(Messages.getString("FormbidableActivity.serverURL"))
+			.continuous(true)
+			.build();
 	
 		client.replicate(push);
 	}

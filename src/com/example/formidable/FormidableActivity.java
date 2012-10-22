@@ -107,7 +107,7 @@ public class FormidableActivity extends Activity {
 	private TDView startViews() {
 		TDDatabase db = localServer.getDatabaseNamed("events");
 		TDView view = db.getViewNamed("records/latest");
-		view.setMapReduceBlocks(new EventMap(), new EventReduce(), newId());
+		new EventAggregation().setMapReduceBlocksFor(view);
 		return view;
 	}
 

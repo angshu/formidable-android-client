@@ -42,9 +42,18 @@ public class EventAggregation {
 			private Map<String, Object> merge(
 						Map<String, Object> current,
 						Map<String, Object> candidate) {
-				if(current == null || isBefore(current, candidate)) {
+				if(current == null) return candidate;
+				
+				Map<String, Object> currentData = (Map<String, Object>) current.get("data");
+				Map<String, Object> candidateData = (Map<String, Object>) candidate.get("data");
+				
+				if(isBefore(current, candidate)) {
+					currentData.putAll(candidateData);
+					candidate.put("data", currentData);
 					return candidate;
 				} else {
+					candidateData.putAll(currentData);
+					current.put("data", candidateData);
 					return current;
 				}
 			}

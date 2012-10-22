@@ -45,9 +45,9 @@ public class FormidableActivity extends Activity {
         initialize(savedInstanceState);
         
         String recordId = newId();
-        createEvent(2, recordId, "Angshu", "Sakar");
-        createEvent(1, recordId, "Chris", "Ford");
-        createEvent(3, recordId, "Pulkit", "Bhuwalka");
+        createEvent(2, recordId, "name", "Angshu");
+        createEvent(1, recordId, "name", "Chris");
+        createEvent(3, recordId, "surname", "Bhuwalka");
         
 		ViewQuery view = new ViewQuery().designDocId("_design/records").viewName("latest");
 		ViewResult result = events.queryView(view);
@@ -79,10 +79,9 @@ public class FormidableActivity extends Activity {
         startClient();
 	}
 
-	private void createEvent(int epoch, String recordId, String givenName, String familyName) {
+	private void createEvent(int epoch, String recordId, String key, String value) {
 		Event event = new Event(epoch, recordId);
-		event.put("name", givenName);
-		event.put("surname", familyName);
+		event.put(key, value);
 		events.create(newId(), event);
 	}
 

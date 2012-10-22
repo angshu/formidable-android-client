@@ -23,8 +23,8 @@ public class Event extends CouchDbDocument {
 		this.recordId = recordId;
 	}	
 	
-	public String getEpoch() {
-		return recordId;
+	public int getEpoch() {
+		return epoch;
 	}
 	
 	public String getRecordId() {

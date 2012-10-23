@@ -115,7 +115,7 @@ public class FormidableActivity extends Activity {
 	private void beginReplicating(CouchDbInstance client) {		
 		ReplicationCommand push = new ReplicationCommand.Builder()
 			.source("events")
-			.target(Messages.getString("FormbidableActivity.serverURL"))
+			.target(Messages.getString("FormidableActivity.serverURL"))
 			.continuous(true)
 			.build();
 	

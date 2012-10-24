@@ -46,11 +46,15 @@ public class FormidableActivity extends Activity {
         createEvent(2, recordId, "name", "Angshu");
         createEvent(3, recordId, "surname", "Bhuwalka");
         
-		ViewQuery view = new ViewQuery().designDocId("_design/records").viewName("latest");
+		ViewQuery view = new ViewQuery()
+			.group(true)
+			.designDocId("_design/records")
+			.viewName("latest");
+		
 		ViewResult result = events.queryView(view);
 
 		for(Row record : result.getRows()) {
-			JsonNode data = record.getValueAsNode().get(recordId).get("data");
+			JsonNode data = record.getValueAsNode().get("data");
 			JsonNode surname = data.get("surname");
 			JsonNode name = data.get("name");
 			System.out.println(String.format("Name: %s %s", name.getTextValue(), surname.getTextValue()));

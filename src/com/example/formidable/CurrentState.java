@@ -26,39 +26,20 @@ public class CurrentState {
         return new TDViewReduceBlock() {
             @Override
             public Object reduce(List<Object> keys, List<Object> values, boolean rereduce) {
-                Map<String, List<Event>> eventsGroupedByRecord = groupEvents(values);
-                Map<String, Event> records = aggregateEvents(eventsGroupedByRecord);
-                return records;
-            }
-
-            private Map<String, Event> aggregateEvents(Map<String, List<Event>> eventsGroupedByRecord) {
-                Map<String, Event> records = new HashMap<String, Event>();
-                for (String recordId : eventsGroupedByRecord.keySet()) {
-                    List<Event> eventList = eventsGroupedByRecord.get(recordId);
-
-                    Event result = replay(recordId, eventList);
-
-                    records.put(recordId, result);
-                }
-                return records;
+                List<Event> events = hydrateEvents(values);
+                return replay((String) keys.get(0), events);
             }
 
             private Event replay(String recordId, List<Event> eventList) {
                 return new EventAggregation(recordId, eventList).replay();
             }
 
-            private Map<String, List<Event>> groupEvents(List<Object> values) {
-                Map<String, List<Event>> recordEventsMap = new HashMap<String, List<Event>>();
-
+            private List<Event> hydrateEvents(List<Object> values) {
+                List<Event> events = new ArrayList<Event>();
                 for (Object document : values) {
-                    Event event = hydrateEvent(document);
-                    if (!recordEventsMap.containsKey(event.getRecordId())) {
-                        recordEventsMap.put(event.getRecordId(), new ArrayList<Event>());
-                    }
-
-                    recordEventsMap.get(event.getRecordId()).add(event);
+                    events.add(hydrateEvent(document));
                 }
-                return recordEventsMap;
+                return events;
             }
 
             private Event hydrateEvent(Object document) {

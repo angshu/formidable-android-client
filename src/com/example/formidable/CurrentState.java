@@ -17,7 +17,8 @@ public class CurrentState {
         return new TDViewMapBlock() {
             @Override
             public void map(Map<String, Object> document, TDViewMapEmitBlock emitter) {
-                emitter.emit(document.get("recordId"), document);
+                List<Object> recordTimeKey = Arrays.asList(document.get("recordId"), document.get("epoch"));
+				emitter.emit(recordTimeKey, document);
             }
         };
     }
@@ -27,11 +28,7 @@ public class CurrentState {
             @Override
             public Object reduce(List<Object> keys, List<Object> values, boolean rereduce) {
                 List<Event> events = hydrateEvents(values);
-                return replay((String) keys.get(0), events);
-            }
-
-            private Event replay(String recordId, List<Event> eventList) {
-                return new EventAggregation(recordId, eventList).replay();
+                return new EventAggregation(events).replay();
             }
 
             private List<Event> hydrateEvents(List<Object> values) {

@@ -42,12 +42,13 @@ public class FormidableActivity extends Activity {
         initialize(savedInstanceState);
         
         String recordId = newId();
-        createEvent(1, recordId, "name", "Chris");
+        createEvent(3, recordId, "surname", "Bhuwalka");     
         createEvent(2, recordId, "name", "Angshu");
-        createEvent(3, recordId, "surname", "Bhuwalka");
+        createEvent(1, recordId, "name", "Chris");
         
 		ViewQuery view = new ViewQuery()
 			.group(true)
+			.groupLevel(1)
 			.designDocId("_design/records")
 			.viewName("latest");
 		

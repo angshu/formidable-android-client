@@ -32,10 +32,10 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 		return recordId;
 	}
 
-    public Event apply(Event older) {
+    public Event appliedOnto(Event older) {
         Map<String, String> map = new HashMap<String, String>(older.data);
         map.putAll(this.data);
-        return new Event(this.epoch, recordId, map);
+        return new Event(this.epoch, this.recordId, map);
     }
 
     @Override

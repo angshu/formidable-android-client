@@ -5,20 +5,20 @@ import java.util.HashMap;
 import java.util.List;
 
 public class EventAggregation {
-    private String recordId;
+	
     private List<Event> events;
-
-    public EventAggregation(String recordId, List<Event> events) {
-        this.recordId = recordId;
+    private Event nullEvent =  new Event(0, null, new HashMap<String, String>());
+    
+    public EventAggregation(List<Event> events) {
         this.events = events;
     }
 
     public Event replay() {
-        Collections.sort(events);
-        Event result = new Event(0, recordId, new HashMap<String, String>());
-        for (Event event : events) {
-            result = event.apply(result);
-        }
-        return result;
+        Collections.sort(events);      
+		Event result = nullEvent;
+		for (Event event : events) {
+			result = event.appliedOnto(result);
+		}
+		return result;
     }
 }

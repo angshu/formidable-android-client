@@ -1,10 +1,7 @@
 package com.example.formidable;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -28,7 +25,6 @@ import com.couchbase.touchdb.TDDatabase;
 import com.couchbase.touchdb.TDServer;
 import com.couchbase.touchdb.TDView;
 import com.couchbase.touchdb.ektorp.TouchDBHttpClient;
-import com.couchbase.touchdb.replicator.TDReplicator;
 import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
 
 public class FormidableActivity extends Activity {
@@ -106,7 +102,7 @@ public class FormidableActivity extends Activity {
 	private TDView startViews() {
 		TDDatabase db = localServer.getDatabaseNamed("events");
 		TDView view = db.getViewNamed("records/latest");
-		new EventAggregation().setMapReduceBlocksFor(view);
+		new CurrentState().setMapReduceBlocksFor(view);
 		return view;
 	}
 

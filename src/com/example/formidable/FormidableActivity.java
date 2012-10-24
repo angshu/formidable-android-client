@@ -5,6 +5,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.UUID;
 
 import org.codehaus.jackson.JsonNode;
@@ -45,13 +46,13 @@ public class FormidableActivity extends Activity {
         initialize(savedInstanceState);
         
         String recordId = newId();
-        createEvent(2, recordId, "name", "Angshu");
         createEvent(1, recordId, "name", "Chris");
+        createEvent(2, recordId, "name", "Angshu");
         createEvent(3, recordId, "surname", "Bhuwalka");
         
 		ViewQuery view = new ViewQuery().designDocId("_design/records").viewName("latest");
 		ViewResult result = events.queryView(view);
-		
+
 		for(Row record : result.getRows()) {
 			JsonNode data = record.getValueAsNode().get(recordId).get("data");
 			JsonNode surname = data.get("surname");
@@ -80,8 +81,9 @@ public class FormidableActivity extends Activity {
 	}
 
 	private void createEvent(int epoch, String recordId, String key, String value) {
-		Event event = new Event(epoch, recordId);
-		event.put(key, value);
+        Map<String, String> map = new HashMap<String, String>();
+        map.put(key, value);
+		Event event = new Event(epoch, recordId, map);
 		events.create(newId(), event);
 	}
 

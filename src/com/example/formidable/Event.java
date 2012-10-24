@@ -6,7 +6,7 @@ import java.util.Map;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.ektorp.support.CouchDbDocument;
 
-public class Event extends CouchDbDocument {
+public class Event extends CouchDbDocument implements Comparable<Event> {
 	private static final long serialVersionUID = 1L;
 	
 	@JsonProperty
@@ -16,11 +16,12 @@ public class Event extends CouchDbDocument {
 	private String recordId;
 	
 	@JsonProperty
-	private Map<String, Object> data = new HashMap<String, Object>();
+	private Map<String, String> data = new HashMap<String, String>();
 	
-	public Event(int epoch, String recordId) {
+	public Event(int epoch, String recordId, Map<String, String> data) {
 		this.epoch = epoch;
 		this.recordId = recordId;
+        this.data.putAll(data);
 	}	
 	
 	public int getEpoch() {
@@ -31,10 +32,14 @@ public class Event extends CouchDbDocument {
 		return recordId;
 	}
 
-	public String get(String key) {
-		return (String) data.get(key);
-	}	
-	public void put(String key, String value) {
-		data.put(key, value);
-	}
+    public Event apply(Event older) {
+        Map<String, String> map = new HashMap<String, String>(older.data);
+        map.putAll(this.data);
+        return new Event(this.epoch, recordId, map);
+    }
+
+    @Override
+    public int compareTo(Event another) {
+        return this.epoch - another.epoch;
+    }
 }

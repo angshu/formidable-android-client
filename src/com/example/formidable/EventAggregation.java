@@ -1,9 +1,6 @@
 package com.example.formidable;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import com.couchbase.touchdb.TDView;
 import com.couchbase.touchdb.TDViewMapBlock;
@@ -20,7 +17,7 @@ public class EventAggregation {
 		return new TDViewMapBlock() {
 			@Override
 			public void map(Map<String, Object> document, TDViewMapEmitBlock emitter) {
-				emitter.emit(document.get("recordId"), document);			
+				emitter.emit(document.get("recordId"), document);
 			}			
 		};
 	}
@@ -29,41 +26,39 @@ public class EventAggregation {
 		return new TDViewReduceBlock() {
 			@Override
 			public Object reduce(List<Object> keys, List<Object> values, boolean rereduce) {
-				Map<String, Object> records = new HashMap<String, Object>();
+				Map<String, List<Event>> recordEventsMap = new HashMap<String, List<Event>>();
 				
 				for(Object document : values) {
-					Map<String, Object> candidate = (Map<String, Object>) document;
-					Map<String, Object> current = (Map<String, Object>) records.get((String) candidate.get("recordId"));	
-					records.put((String) candidate.get("recordId"), merge(current, candidate));
+                    Event event = hydrateEvent(document);
+                    if (!recordEventsMap.containsKey(event.getRecordId())) {
+                        recordEventsMap.put(event.getRecordId(), new ArrayList<Event>());
+                    }
+
+                    recordEventsMap.get(event.getRecordId()).add(event);
 				}
-				return records;
+
+                Map<String, Event> records = new HashMap<String, Event>();
+                for (String recordId : recordEventsMap.keySet()) {
+                    List<Event> eventList = recordEventsMap.get(recordId);
+                    Collections.sort(eventList);
+
+                    Event result = new Event(0, recordId, new HashMap<String, String>());
+                    for(Event event : eventList) {
+                        result = event.apply(result);
+                    }
+
+                    records.put(recordId, result);
+                }
+
+                return records;
 			}
 
-			private Map<String, Object> merge(
-						Map<String, Object> current,
-						Map<String, Object> candidate) {
-				if(current == null) return candidate;
-				
-				Map<String, Object> currentData = (Map<String, Object>) current.get("data");
-				Map<String, Object> candidateData = (Map<String, Object>) candidate.get("data");
-				
-				if(isBefore(current, candidate)) {
-					currentData.putAll(candidateData);
-					candidate.put("data", currentData);
-					return candidate;
-				} else {
-					candidateData.putAll(currentData);
-					current.put("data", candidateData);
-					return current;
-				}
-			}
-
-			private boolean isBefore(
-					Map<String, Object> a,
-					Map<String, Object> b) {
-				return (Integer) a.get("epoch") < (Integer) b.get("epoch");
-			}
-		};
+            private Event hydrateEvent(Object document) {
+                Map<String, Object> documentMap = (Map<String, Object>) document;
+                return new Event((Integer)documentMap.get("epoch"), (String)documentMap.get("recordId"),
+                        (Map<String,String>)documentMap.get("data"));
+            }
+        };
 	}
 	
 	private String getId() {

@@ -4,3 +4,4 @@ out/
 .idea/
 local.properties
 gen/
+dependencies/

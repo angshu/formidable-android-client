@@ -1,0 +1,3 @@
+[submodule "dependencies/touchdb"]
+	path = dependencies/touchdb
+	url = git://github.com/couchbaselabs/TouchDB-Android.git

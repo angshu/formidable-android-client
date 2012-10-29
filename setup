@@ -1,0 +1,8 @@
+#!/bin/sh
+
+git submodule init
+git submodule update
+
+android update project -s --path dependencies/touchdb
+android update project -s --path formidable-client 
+android update project -s --path instrumentation-test 

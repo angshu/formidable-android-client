@@ -29,10 +29,10 @@ import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
 
 public class FormidableActivity extends Activity {
 	
-	static { 
+	static {
 	    TDURLStreamHandlerFactory.registerSelfIgnoreError();
 	}
-	
+
 	private static final String TAG = "MainActivity";
 	private TDServer localServer;
 	CouchDbConnector events;
@@ -89,8 +89,8 @@ public class FormidableActivity extends Activity {
 	}
 
 	private void startClient() {
-		CouchDbInstance client = new StdCouchDbInstance(new TouchDBHttpClient(localServer));  
-        events = client.createConnector("events", true);	
+		CouchDbInstance client = new StdCouchDbInstance(new TouchDBHttpClient(localServer));
+        events = client.createConnector("events", true);
 		beginReplicating(client);
 	}
 
@@ -103,7 +103,7 @@ public class FormidableActivity extends Activity {
             Log.e(TAG, "Error starting TouchDB Server.", e);
         }
 	}
-	
+
 	private TDView startViews() {
 		TDDatabase db = localServer.getDatabaseNamed("events");
 		TDView view = db.getViewNamed("records/latest");

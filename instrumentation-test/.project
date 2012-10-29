@@ -30,4 +30,16 @@
 		<nature>com.android.ide.eclipse.adt.AndroidNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>touchdb-ektorp-src</name>
+			<type>2</type>
+			<location>/Users/Angshus/work/ICT4H/formidable-android-client/dependencies/touchdb/TouchDB-Android-Ektorp/src</location>
+		</link>
+		<link>
+			<name>touchdb-src</name>
+			<type>2</type>
+			<location>/Users/Angshus/work/ICT4H/formidable-android-client/dependencies/touchdb/TouchDB-Android/src</location>
+		</link>
+	</linkedResources>
 </projectDescription>

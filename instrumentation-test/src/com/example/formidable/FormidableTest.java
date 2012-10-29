@@ -26,18 +26,18 @@ public class FormidableTest extends FormidableTestCase {
         createEvent(2, recordId, "name", "Angshu");
         createEvent(1, recordId, "name", "Chris");
 
-        ViewQuery viewQuery = new ViewQuery()
-                .group(true)
-                .groupLevel(1)
-                .designDocId("_design/records")
-                .viewName("latest");
-
-        printResults(viewQuery);
-
-        createEvent(4, recordId, "name", "Vivek");
-        createEvent(5, recordId, "age", "25");
-
-        printResults(viewQuery);
+//        ViewQuery viewQuery = new ViewQuery()
+//                .group(true)
+//                .groupLevel(1)
+//                .designDocId("_design/records")
+//                .viewName("latest");
+//
+//        printResults(viewQuery);
+//
+//        createEvent(4, recordId, "name", "Vivek");
+//        createEvent(5, recordId, "age", "25");
+//
+//        printResults(viewQuery);
     }
 
     private void printResults(ViewQuery viewQuery ) {

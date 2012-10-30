@@ -30,7 +30,7 @@ abstract class FormidableTestCase extends InstrumentationTestCase {
 
     protected TDServer server = null;
     protected TDDatabase database = null;
-    protected CouchDbConnector db;
+    protected CouchDbConnector connector;
 
     protected String DEFAULT_TEST_DB = "formidable-test";
 
@@ -45,95 +45,32 @@ abstract class FormidableTestCase extends InstrumentationTestCase {
             initializedUrlHandler = true;
         }
 
-        loadCustomProperties();
-        startTouchDB();
-        startDatabase();
-        startViews();
+        startServer();
         startClient();
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        Log.v(TAG, "tearDown");
-        super.tearDown();
-        stopDatabase();
-        stopTouchDB();
+    private String getFilesDir() {
+        //return getInstrumentation().getContext().getFilesDir().getAbsolutePath();
+        return "/data/data/com.example.formidable/files";
     }
 
-    protected String getServerPath() {
-//        String filesDir = getInstrumentation().getContext().getFilesDir().getAbsolutePath();
-        String filesDir = "/data/data/com.example.formidable/files";
-        return filesDir;
-    }
-
-    protected void startTouchDB() {
+	private void startServer() {
         try {
-            String serverPath = getServerPath();
-            File serverPathFile = new File(serverPath);
-            FileDirUtils.deleteRecursive(serverPathFile);
-            serverPathFile.mkdir();
-            server = new TDServer(getServerPath());
+            server = new TDServer(getFilesDir());
+            startViews();
         } catch (IOException e) {
-            fail("Creating server caused IOException");
+            Log.e(TAG, "Error starting TouchDB Server.", e);
         }
-    }
-
-    protected void startDatabase() {
-        database = ensureEmptyDatabase(DEFAULT_TEST_DB);
-        boolean status = database.open();
-        Assert.assertTrue(status);
-    }
-
-    private void startViews() {
-        TDView view = database.getViewNamed("records/latest");
-        new CurrentState().setMapReduceBlocksFor(view);
-    }
-
-    private void startClient() {
-        CouchDbInstance client = new StdCouchDbInstance(new TouchDBHttpClient(server));
-        db = client.createConnector("events", true);
-        //beginReplicating(client);
-    }
-
-    private void beginReplicating(CouchDbInstance client) {
-        ReplicationCommand push = new ReplicationCommand.Builder()
-                .source("events")
-                .target(Messages.getString("FormidableActivity.serverURL"))
-                .continuous(true)
-                .build();
-
-        client.replicate(push);
-    }
-
-    protected void stopTouchDB() {
-        if(server != null) {
-            server.close();
-        }
-    }
-
-    protected void stopDatabase() {
-        if(database != null) {
-            database.close();
-        }
-    }
-
-    protected TDDatabase ensureEmptyDatabase(String dbName) {
-        TDDatabase db = server.getExistingDatabaseNamed(dbName);
-        if(db != null) {
-            boolean status = db.deleteDatabase();
-            Assert.assertTrue(status);
-        }
-        db = server.getDatabaseNamed(dbName, true);
-        return db;
-    }
-
-    protected void loadCustomProperties() throws IOException {
-        Properties systemProperties = System.getProperties();
-
-        InputStream mainProperties = FormidableTestCase.class.getResourceAsStream("test.properties");
-        if(mainProperties != null) {
-            systemProperties.load(mainProperties);
-        }
-    }
-
+	}
+  
+	private void startViews() {
+		TDDatabase db = server.getDatabaseNamed("events");
+		TDView view = db.getViewNamed("records/latest");
+		new CurrentState().setMapReduceBlocksFor(view);
+	}
+	
+	private void startClient() {
+		CouchDbInstance client = new StdCouchDbInstance(new TouchDBHttpClient(server));
+        connector = client.createConnector("events", true);
+	}
 }

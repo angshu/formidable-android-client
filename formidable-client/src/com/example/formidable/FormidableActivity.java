@@ -104,11 +104,10 @@ public class FormidableActivity extends Activity {
         }
 	}
 
-	private TDView startViews() {
+	private void startViews() {
 		TDDatabase db = localServer.getDatabaseNamed("events");
 		TDView view = db.getViewNamed("records/latest");
 		new CurrentState().setMapReduceBlocksFor(view);
-		return view;
 	}
 
 	private String newId() {

@@ -32,7 +32,7 @@ public class FormidableTest extends FormidableTestCase {
 
     private void printResults(ViewQuery viewQuery ) {
     	
-        ViewResult result = connector.queryView(viewQuery);
+        ViewResult result = events.queryView(viewQuery);
 
         for(ViewResult.Row record : result.getRows()) {
             JsonNode data = record.getValueAsNode().get("data");
@@ -46,7 +46,7 @@ public class FormidableTest extends FormidableTestCase {
         Map<String, String> map = new HashMap<String, String>();
         map.put(key, value);
         Event event = new Event(epoch, recordId, map);
-        connector.create(newId(), event);
+        events.create(newId(), event);
     }
 
     private String newId() {

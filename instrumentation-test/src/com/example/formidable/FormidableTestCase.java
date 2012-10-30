@@ -7,10 +7,13 @@ import com.couchbase.touchdb.TDServer;
 import com.couchbase.touchdb.TDView;
 import com.couchbase.touchdb.ektorp.TouchDBHttpClient;
 import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
+import com.couchbase.touchdb.support.FileDirUtils;
+
 import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
 import org.ektorp.impl.StdCouchDbInstance;
 
+import java.io.File;
 import java.io.IOException;
 
 abstract class FormidableTestCase extends InstrumentationTestCase {
@@ -39,8 +42,9 @@ abstract class FormidableTestCase extends InstrumentationTestCase {
 
 	private void startServer() {
         try {        		
-            localServer = new TDServer(getFilesDir());
-            localServer.deleteDatabaseNamed("events");
+            String files = getFilesDir();
+            FileDirUtils.deleteRecursive(new File(files));
+			localServer = new TDServer(files);
             startViews();
         } catch (IOException e) {
             Log.e(TAG, "Error starting TouchDB Server.", e);

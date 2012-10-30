@@ -10,7 +10,7 @@ import com.couchbase.touchdb.TDViewReduceBlock;
 public class CurrentState {
 
     public void setMapReduceBlocksFor(TDView view) {
-        view.setMapReduceBlocks(map(), reduce(), getId());
+        view.setMapReduceBlocks(map(), reduce(), "0.1");
     }
 
     private TDViewMapBlock map() {
@@ -45,9 +45,5 @@ public class CurrentState {
                         (Map<String, String>) documentMap.get("data"));
             }
         };
-    }
-
-    private String getId() {
-        return UUID.randomUUID().toString();
     }
 }

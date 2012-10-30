@@ -38,8 +38,9 @@ abstract class FormidableTestCase extends InstrumentationTestCase {
     }
 
 	private void startServer() {
-        try {
+        try {        		
             localServer = new TDServer(getFilesDir());
+            localServer.deleteDatabaseNamed("events");
             startViews();
         } catch (IOException e) {
             Log.e(TAG, "Error starting TouchDB Server.", e);

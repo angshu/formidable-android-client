@@ -22,24 +22,29 @@ public class FormidableTest extends FormidableTestCase {
                 .designDocId("_design/records")
                 .viewName("latest");
 
-        printResults(viewQuery);
+        Map<String, String> patient = getOnlyResult(viewQuery);
+        assertEquals("Angshu", patient.get("name"));
 
         createEvent(4, recordId, "name", "Vivek");
-        createEvent(5, recordId, "age", "25");
 
-        printResults(viewQuery);
+        patient = getOnlyResult(viewQuery);
+        assertEquals("Vivek", patient.get("name"));
     }
 
-    private void printResults(ViewQuery viewQuery ) {
+    private Map<String, String> getOnlyResult(ViewQuery viewQuery ) {
     	
         ViewResult result = events.queryView(viewQuery);
 
-        for(ViewResult.Row record : result.getRows()) {
-            JsonNode data = record.getValueAsNode().get("data");
-            JsonNode surname = data.get("surname");
-            JsonNode name = data.get("name");
-            System.out.println(String.format("Name: %s %s", name.getTextValue(), surname.getTextValue()));
-        }
+        ViewResult.Row record = result.getRows().get(0);     
+        JsonNode data = record.getValueAsNode().get("data");
+        JsonNode surname = data.get("surname");
+        JsonNode name = data.get("name");
+        
+        Map<String, String> patient = new HashMap<String, String>();
+        patient.put("name", name.getTextValue());
+        patient.put("surname", surname.getTextValue());
+  
+        return patient;
     }
 
     private void createEvent(int epoch, String recordId, String key, String value) {

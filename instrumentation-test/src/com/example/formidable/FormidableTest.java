@@ -12,7 +12,7 @@ public class FormidableTest extends FormidableTestCase {
 
     public void testReadingView() {
         String recordId = newId();
-        createEvent(3, recordId, "surname", "Bhuwalka");
+        createEvent(6, recordId, "surname", "Bhuwalka");
         createEvent(2, recordId, "name", "Angshu");
         createEvent(1, recordId, "name", "Chris");
 
@@ -26,9 +26,11 @@ public class FormidableTest extends FormidableTestCase {
         assertEquals("Angshu", patient.get("name"));
 
         createEvent(4, recordId, "name", "Vivek");
+        createEvent(5, recordId, "surname", "Singh");
 
         patient = getOnlyResult(viewQuery);
         assertEquals("Vivek", patient.get("name"));
+        assertEquals("Bhuwalka", patient.get("surname"));
     }
 
     private Map<String, String> getOnlyResult(ViewQuery viewQuery ) {

@@ -82,7 +82,7 @@ public class FormidableActivity extends Activity {
 	}
 
 	private void createEvent(int epoch, String recordId, String key, String value) {
-        Map<String, String> map = new HashMap<String, String>();
+        Map<String, Object> map = new HashMap<String, Object>();
         map.put(key, value);
 		Event event = new Event(epoch, recordId, map);
 		events.create(newId(), event);

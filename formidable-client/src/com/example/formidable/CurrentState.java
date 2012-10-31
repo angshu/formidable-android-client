@@ -42,7 +42,7 @@ public class CurrentState {
             private Event hydrateEvent(Object document) {
                 Map<String, Object> documentMap = (Map<String, Object>) document;
                 return new Event((Integer) documentMap.get("epoch"), (String) documentMap.get("recordId"),
-                        (Map<String, String>) documentMap.get("data"));
+                        (Map<String, Object>) documentMap.get("data"));
             }
         };
     }

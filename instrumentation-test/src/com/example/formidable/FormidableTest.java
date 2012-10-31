@@ -5,7 +5,9 @@ import org.ektorp.ViewQuery;
 import org.ektorp.ViewResult;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 
 public class FormidableTest extends FormidableTestCase {
@@ -22,18 +24,25 @@ public class FormidableTest extends FormidableTestCase {
                 .designDocId("_design/records")
                 .viewName("latest");
 
-        Map<String, String> patient = getOnlyResult(viewQuery);
+        Map<String, Object> patient = getOnlyResult(viewQuery);
         assertEquals("Angshu", patient.get("name"));
 
         createEvent(4, recordId, "name", "Vivek");
         createEvent(5, recordId, "surname", "Singh");
+        
+        Map<String, Object> skills = new HashMap<String, Object>();
+        skills.put("abac339", "nunchuku");
+        skills.put("34ac333", "computer hacking");
+		createEvent(7, recordId, "skills", skills );
 
         patient = getOnlyResult(viewQuery);
         assertEquals("Vivek", patient.get("name"));
         assertEquals("Bhuwalka", patient.get("surname"));
+        assertTrue(((Map<String, Object>) patient.get("skills"))
+        		.containsValue("nunchuku"));
     }
 
-    private Map<String, String> getOnlyResult(ViewQuery viewQuery ) {
+    private Map<String, Object> getOnlyResult(ViewQuery viewQuery ) {
     	
         ViewResult result = events.queryView(viewQuery);
 
@@ -42,15 +51,24 @@ public class FormidableTest extends FormidableTestCase {
         JsonNode surname = data.get("surname");
         JsonNode name = data.get("name");
         
-        Map<String, String> patient = new HashMap<String, String>();
+        Map<String, Object> patient = new HashMap<String, Object>();
         patient.put("name", name.getTextValue());
         patient.put("surname", surname.getTextValue());
+        Map<String, Object> skills = new HashMap<String, Object>();
+        
+        if(data.get("skills") != null) {
+        		for (Iterator<Entry<String, JsonNode>> iter = data.get("skills").getFields(); iter.hasNext(); ) {
+        			Entry<String, JsonNode> entry = iter.next();
+        			skills.put(entry.getKey(), entry.getValue().getTextValue());
+        		}
+			patient.put("skills", skills);
+        }
   
         return patient;
     }
 
-    private void createEvent(int epoch, String recordId, String key, String value) {
-        Map<String, String> map = new HashMap<String, String>();
+    private void createEvent(int epoch, String recordId, String key, Object value) {
+        Map<String, Object> map = new HashMap<String, Object>();
         map.put(key, value);
         Event event = new Event(epoch, recordId, map);
         events.create(newId(), event);

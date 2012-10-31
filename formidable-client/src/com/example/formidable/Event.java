@@ -16,9 +16,9 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 	private String recordId;
 	
 	@JsonProperty
-	private Map<String, String> data = new HashMap<String, String>();
+	private Map<String, Object> data = new HashMap<String, Object>();
 	
-	public Event(int epoch, String recordId, Map<String, String> data) {
+	public Event(int epoch, String recordId, Map<String, Object> data) {
 		this.epoch = epoch;
 		this.recordId = recordId;
         this.data.putAll(data);
@@ -33,7 +33,7 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 	}
 
     public Event appliedOnto(Event older) {
-        Map<String, String> merged = new MapMerger().of(older.data, this.data);
+        Map<String, Object> merged = new MapMerger().of(older.data, this.data);
         return new Event(this.epoch, this.recordId, merged);
     }
 

@@ -7,11 +7,15 @@ public class MapMerger {
 
 	public Map<String, Object> merge(Map<String, Object> under,
 			Map<String, Object> over) {
+		
+		if(under == null) return over;
+		if(over == null) return under;
+		
 		Map<String, Object> result = new HashMap<String, Object>();
 		result.putAll(under);
 		
 		for(Map.Entry<String, Object> entry : over.entrySet()) {
-			if(entry instanceof Map) {
+			if(entry.getValue() instanceof Map) {
 				result.put(entry.getKey(), merge((Map<String, Object>) under.get(entry.getKey()), (Map<String, Object>) over.get(entry.getKey())));
 			} else {
 				result.put(entry.getKey(), entry.getValue());

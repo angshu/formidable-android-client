@@ -31,9 +31,12 @@ public class FormidableTest extends FormidableTestCase {
         createEvent(5, recordId, "surname", "Singh");
         
         Map<String, Object> skills = new HashMap<String, Object>();
-        skills.put("abac339", "nunchuku");
-        skills.put("34ac333", "computer hacking");
-		createEvent(7, recordId, "skills", skills );
+        skills.put("abac339", "computer hacking");
+		createEvent(8, recordId, "skills", skills );
+		
+        Map<String, Object> skills2 = new HashMap<String, Object>();
+        skills2.put("34ac333", "nunchuku");
+		createEvent(7, recordId, "skills", skills2 );
 
         patient = getOnlyResult(viewQuery);
         assertEquals("Vivek", patient.get("name"));

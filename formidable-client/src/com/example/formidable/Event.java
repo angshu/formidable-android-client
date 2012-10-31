@@ -33,7 +33,7 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 	}
 
     public Event appliedOnto(Event older) {
-        Map<String, Object> merged = new MapMerger().of(older.data, this.data);
+        Map<String, Object> merged = new MapMerger().merge(older.data, this.data);
         return new Event(this.epoch, this.recordId, merged);
     }
 

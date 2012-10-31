@@ -40,6 +40,8 @@ public class FormidableTest extends FormidableTestCase {
         assertEquals("Bhuwalka", patient.get("surname"));
         assertTrue(((Map<String, Object>) patient.get("skills"))
         		.containsValue("nunchuku"));
+        assertTrue(((Map<String, Object>) patient.get("skills"))
+        		.containsValue("computer hacking"));
     }
 
     private Map<String, Object> getOnlyResult(ViewQuery viewQuery ) {

@@ -54,11 +54,9 @@ public class FormidableActivity extends Activity {
 		
 		ViewResult result = events.queryView(view);
 
-		for(Row record : result.getRows()) {
-			JsonNode data = record.getValueAsNode().get("data");
-			JsonNode surname = data.get("surname");
-			JsonNode name = data.get("name");
-			System.out.println(String.format("Name: %s %s", name.getTextValue(), surname.getTextValue()));
+		for(Row row : result.getRows()) {
+			Map<String, Object> record = new RecordBuilder(row).build();
+			System.out.println(String.format("Name: %s %s", record.get("name"), record.get("surname")));
 		}
 		//localServer.close();
         

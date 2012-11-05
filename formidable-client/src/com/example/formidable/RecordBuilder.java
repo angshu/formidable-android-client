@@ -30,7 +30,9 @@ public class RecordBuilder {
         		if(next.getValue().getFields().hasNext()) {
         			record.put(next.getKey(), map(next.getValue()));
         		} else {
-        			record.put(next.getKey(), next.getValue().getTextValue());
+                    if (next.getValue().getTextValue() != null) {
+        			    record.put(next.getKey(), next.getValue().getTextValue());
+                    }
         		}
         }
         

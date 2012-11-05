@@ -92,12 +92,63 @@ public class FormidableTest extends FormidableTestCase {
     }
 
     public void testNestedMapEvents() {
-        //        String recordId = newId();
-        //        Map<String, Object>
-        //        ViewQuery viewQuery = getRecordView();
-        //
-        //        createEvent(1, recordId, "surname", surname1);
-        //        createEvent(4, recordId, "name", name2);
+        RecordRepository repository = new RecordRepository(super.events);
+
+        // Verify addition of map
+        String recordId = newId();
+        String haemoglobin1 = "12.5";
+        Map<String, Object> observationsCreate = new HashMap<String, Object>();
+        observationsCreate.put("haemoglobin", haemoglobin1);
+
+        repository.put(createEvent(1, recordId, "observations", observationsCreate));
+
+        Map<String, Object> record = repository.get(recordId);
+        assertTrue(record.containsKey("observations"));
+        assertEquals(haemoglobin1, ((Map) (record.get("observations"))).get("haemoglobin"));
+
+
+        // Verify update/addition of keys inside map
+        String haemoglobin2 = "13.5";
+        String rhCount = "1.5";
+        Map<String, Object> observationsUpdate = new HashMap<String, Object>();
+        observationsUpdate.put("haemoglobin", haemoglobin2);
+        observationsUpdate.put("Rh+", rhCount);
+
+        repository.put(createEvent(2, recordId, "observations", observationsUpdate));
+
+        record = repository.get(recordId);
+        assertEquals(haemoglobin2, ((Map) (record.get("observations"))).get("haemoglobin"));
+        assertEquals(rhCount, ((Map)(record.get("observations"))).get("Rh+"));
+
+
+        // Verify deletion of a key inside map
+        Map<String, Object> observationsDeleteKey = new HashMap<String, Object>();
+        observationsDeleteKey.put("haemoglobin", null);
+
+        repository.put(createEvent(3, recordId, "observations", observationsDeleteKey));
+
+        record = repository.get(recordId);
+        assertFalse(((Map) (record.get("observations"))).containsKey("haemoglobin"));
+        assertTrue(((Map) (record.get("observations"))).containsKey("Rh+"));
+
+
+        // Verify deletion of all keys inside map
+        Map<String, Object> observationsDeleteAllKeys = new HashMap<String, Object>();
+        observationsDeleteAllKeys.put("Rh+", null);
+
+        repository.put(createEvent(4, recordId, "observations", observationsDeleteAllKeys));
+
+        record = repository.get(recordId);
+        assertFalse(record.containsKey("observations"));
+
+
+        // Verify deletion of map
+        Map<String, Object> observationsDeleteMap = new HashMap<String, Object>();
+
+        repository.put(createEvent(5, recordId, "observations", null));
+
+        record = repository.get(recordId);
+        assertFalse(record.containsKey("observations"));
     }
 
     private Event createEvent(int epoch, String recordId, String key, Object value) {

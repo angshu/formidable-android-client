@@ -8,8 +8,8 @@ public class EventAggregation {
     private List<Event> events;
     private Event nullEvent =  new Event(0, null, new HashMap<String, Object>());
     
-    public EventAggregation(List<Event> sortedEvents) {
-        this.events = sortedEvents;
+    public EventAggregation(List<Event> orderedEvents) {
+        this.events = orderedEvents;
     }
 
     public Event replay() {    

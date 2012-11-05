@@ -20,7 +20,6 @@ abstract class FormidableTestCase extends InstrumentationTestCase {
 
     public static final String TAG = "FormidableTestCase";
     private TDServer localServer = null;
-    private TDDatabase database = null;
     protected CouchDbConnector events;
 
     @Override

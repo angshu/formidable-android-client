@@ -24,7 +24,8 @@ public class RecordRepository {
          .group(true)
          .groupLevel(1)
          .designDocId("_design/records")
-         .viewName("latest");
+         .viewName("latest")
+         .key(recordId);
 		 
 		ViewResult result = events.queryView(viewQuery);
         return new RecordBuilder(result.getRows().get(0)).build();

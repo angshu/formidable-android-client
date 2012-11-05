@@ -39,26 +39,16 @@ public class FormidableActivity extends Activity {
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
-        initialize(savedInstanceState);
+        initialize(savedInstanceState);       
+        RecordRepository repository = new RecordRepository(events);
         
-        String recordId = newId();
-        createEvent(3, recordId, "surname", "Bhuwalka");     
-        createEvent(2, recordId, "name", "Angshu");
-        createEvent(1, recordId, "name", "Chris");
-        
-		ViewQuery view = new ViewQuery()
-			.group(true)
-			.groupLevel(1)
-			.designDocId("_design/records")
-			.viewName("latest");
-		
-		ViewResult result = events.queryView(view);
-
-		for(Row row : result.getRows()) {
-			Map<String, Object> record = new RecordBuilder(row).build();
-			System.out.println(String.format("Name: %s %s", record.get("name"), record.get("surname")));
-		}
-		//localServer.close();
+        String recordId = newId();     
+        repository.put(createSimpleEvent(3, recordId, "surname", "Bhuwalka"));     
+        repository.put(createSimpleEvent(2, recordId, "name", "Angshu"));
+        repository.put(createSimpleEvent(1, recordId, "name", "Chris"));
+        		
+		Map<String, Object> record = repository.get(recordId);
+		System.out.println(String.format("Name: %s %s", record.get("name"), record.get("surname")));
         
         setContentView(R.layout.activity_main);
         WebView myWebView = (WebView) findViewById(R.id.webview);
@@ -79,11 +69,10 @@ public class FormidableActivity extends Activity {
         startClient();
 	}
 
-	private void createEvent(int epoch, String recordId, String key, String value) {
+	private Event createSimpleEvent(int epoch, String recordId, String key, String value) {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put(key, value);
-		Event event = new Event(epoch, recordId, map);
-		events.create(newId(), event);
+		return new Event(epoch, recordId, map);		
 	}
 
 	private void startClient() {

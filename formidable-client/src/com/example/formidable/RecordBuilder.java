@@ -27,19 +27,18 @@ public class RecordBuilder {
         
         for(Iterator<Entry<String, JsonNode>> iter = node.getFields(); iter.hasNext(); ) {
         		Entry<String, JsonNode> next = iter.next();
-        		if(next.getValue().getFields().hasNext()) {
-                    Map<String, Object> map = map(next.getValue());
-                    if (map != null && map.keySet().size() > 0) {
-                        record.put(next.getKey(), map);
-                    }
+        		if(isMap(next)) {
+                record.put(next.getKey(), map(next.getValue()));
         		} else {
-                    if (next.getValue().getTextValue() != null) {
-        			    record.put(next.getKey(), next.getValue().getTextValue());
-                    }
+		    		record.put(next.getKey(), next.getValue().getTextValue());
         		}
         }
         
         return record;
+	}
+
+	private boolean isMap(Entry<String, JsonNode> next) {
+		return next.getValue().getFields().hasNext();
 	}
 
 }

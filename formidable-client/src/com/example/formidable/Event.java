@@ -2,6 +2,7 @@ package com.example.formidable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.ektorp.support.CouchDbDocument;
@@ -53,15 +54,34 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 		if(over == null) return under;
 		
 		Map<String, Object> result = new HashMap<String, Object>();
-		result.putAll(under);
+		overwriteValues(result, under);
 		
 		for(Map.Entry<String, Object> entry : over.entrySet()) {
 			if(entry.getValue() instanceof Map) {
-				result.put(entry.getKey(), merge((Map<String, Object>) under.get(entry.getKey()), (Map<String, Object>) over.get(entry.getKey())));
+				Map<String, Object> nextLevel = merge((Map<String, Object>) under.get(entry.getKey()), (Map<String, Object>) over.get(entry.getKey()));
+				overwriteValue(result, entry.getKey(), nextLevel);
 			} else {
-				result.put(entry.getKey(), entry.getValue());
+				overwriteValue(result, entry.getKey(), entry.getValue());
 			}
 		}
 		return result;
+	}
+
+	private void overwriteValue(Map<String, Object> map, String key, Object value) {
+		if(isEmpty(value)) {
+			map.remove(key);
+		} else {
+			map.put(key, value);
+		}
+	}
+
+	private boolean isEmpty(Object value) {
+		return value == null || (value instanceof Map && ((Map) value).isEmpty());
+	}
+	
+	private void overwriteValues(Map<String, Object> map, Map<String, Object> values) {	
+		for(Entry<String, Object> entry : values.entrySet()) {
+			overwriteValue(map, entry.getKey(), entry.getValue());
+		}
 	}
 }

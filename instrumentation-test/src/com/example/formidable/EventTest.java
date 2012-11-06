@@ -8,7 +8,7 @@ import junit.framework.TestCase;
 
 public class EventTest extends TestCase {
    
-   public void testAppliedEventDeterminesMetadata() {	   
+   public void testThatAppliedEventDeterminesMetadata() {	   
 	   Event older = new Event(1, "abc", Collections.<String, Object> emptyMap());
 	   Event newer = new Event(2, "abc", Collections.<String, Object> emptyMap());
 	   
@@ -35,19 +35,37 @@ public class EventTest extends TestCase {
    }
    
    public void testNestedMerging() {
-	   Map<String, Object> angshu = new HashMap<String, Object>();
-	   angshu.put("skills", new HashMap<String, String>());
-	   ((Map<String, Object>) angshu.get("skills")).put("martial", "nunchuku");
-	   Event a = new Event(1, "", angshu);
+	   Map<String, Object> olds = new HashMap<String, Object>();
+	   olds.put("skills", new HashMap<String, String>());
+	   ((Map<String, Object>) olds.get("skills")).put("martial", "nunchuku");
+	   Event older = new Event(1, "", olds);
 	   
-	   Map<String, Object> pulkit = new HashMap<String, Object>();
-	   pulkit.put("skills", new HashMap<String, String>());
-	   ((Map<String, Object>) pulkit.get("skills")).put("IT", "computer hacking");
-	   Event p = new Event(2, "", pulkit);
+	   Map<String, Object> news = new HashMap<String, Object>();
+	   news.put("skills", new HashMap<String, String>());
+	   ((Map<String, Object>) news.get("skills")).put("IT", "computer hacking");
+	   Event newer = new Event(2, "", news);
 	     
-	   Map<String, String> skills = (Map<String, String>) p.appliedOnto(a).get("skills");
+	   Map<String, String> skills = (Map<String, String>) newer.appliedOnto(older).get("skills");
 	   
 	   assertEquals("nunchuku", skills.get("martial"));
+	   assertEquals("computer hacking", skills.get("IT"));
+   }
+   
+   public void testDeletion() {
+	   Map<String, Object> olds = new HashMap<String, Object>();
+	   olds.put("skills", new HashMap<String, String>());
+	   ((Map<String, Object>) olds.get("skills")).put("martial", "nunchuku");
+	   ((Map<String, Object>) olds.get("skills")).put("IT", "computer hacking");
+	   Event older = new Event(1, "", olds); 
+	   
+	   Map<String, Object> news = new HashMap<String, Object>();
+	   news.put("skills", new HashMap<String, String>());
+	   ((Map<String, Object>) news.get("skills")).put("martial", null);	   
+	   Event newer = new Event(2, "", news);
+	     
+	   Map<String, String> skills = (Map<String, String>) newer.appliedOnto(older).get("skills");
+	   
+	   assertFalse(skills.containsKey("martial"));
 	   assertEquals("computer hacking", skills.get("IT"));
    }
 }

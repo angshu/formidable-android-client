@@ -7,18 +7,21 @@ import java.util.List;
 public class EventAggregation {
 	
     private List<Event> events;
-    private Event nullEvent =  new Event(0, null, new HashMap<String, Object>());
     
-    public EventAggregation(List<Event> events) {
-        this.events = events;
-        Collections.sort(this.events);
+    public EventAggregation(List<Event> orderedEvents) {
+        this.events = orderedEvents;
+        Collections.sort(events);
     }
 
     public Event replay() {    
-		Event result = nullEvent;
+		Event result = nullEvent(events.get(0).getRecordId());
 		for (Event event : events) {
 			result = event.appliedOnto(result);
 		}
 		return result;
     }
+
+	private Event nullEvent(String recordId) {
+		return new Event(0, recordId, new HashMap<String, Object>());
+	}
 }

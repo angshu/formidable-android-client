@@ -34,6 +34,11 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 	}
 
     public Event appliedOnto(Event older) {
+    	
+    		if(!older.recordId.equals(this.recordId)) {
+    			throw new IllegalArgumentException("Only events for the same record can be aggregated.");
+    		}
+    	
         Map<String, Object> merged = merge(older.data, this.data);
         return new Event(this.epoch, this.recordId, merged);
     }

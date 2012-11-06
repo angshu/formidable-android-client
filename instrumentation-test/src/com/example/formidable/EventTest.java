@@ -82,4 +82,16 @@ public class EventTest extends TestCase {
 	     
 	   assertNull(newer.appliedOnto(older).get("skills"));
    }
+   
+   public void testThatExceptionIsThrownWhenRecordIdsDontMatch() {
+	   try {
+		   Event fromPatientA = new Event(2, "recordA", Collections.EMPTY_MAP);
+		   Event fromPatientB = new Event(1, "recordB", Collections.EMPTY_MAP);
+		   fromPatientA.appliedOnto(fromPatientB);
+		   
+		   fail(); // No Exception :-(
+	   } catch(IllegalArgumentException e) {
+		   // Success!
+	   }
+   }
 }

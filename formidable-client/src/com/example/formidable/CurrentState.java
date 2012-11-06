@@ -29,7 +29,6 @@ public class CurrentState {
             @Override
             public Object reduce(List<Object> keys, List<Object> values, boolean rereduce) {
                 List<Event> events = hydrateEvents(values);
-                Collections.sort(events);
                 return new EventAggregation(events).replay();
             }
 

@@ -59,20 +59,20 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 		if(over == null) return under;
 		
 		Map<String, Object> result = new HashMap<String, Object>();
-		overwriteValues(result, under);
+		overwrite(result, under);
 		
 		for(Map.Entry<String, Object> entry : over.entrySet()) {
 			if(entry.getValue() instanceof Map) {
 				Map<String, Object> nextLevel = merge((Map<String, Object>) under.get(entry.getKey()), (Map<String, Object>) over.get(entry.getKey()));
-				overwriteValue(result, entry.getKey(), nextLevel);
+				overwrite(result, entry.getKey(), nextLevel);
 			} else {
-				overwriteValue(result, entry.getKey(), entry.getValue());
+				overwrite(result, entry.getKey(), entry.getValue());
 			}
 		}
 		return result;
 	}
 
-	private void overwriteValue(Map<String, Object> map, String key, Object value) {
+	private void overwrite(Map<String, Object> map, String key, Object value) {
 		if(isEmpty(value)) {
 			map.remove(key);
 		} else {
@@ -84,9 +84,9 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 		return value == null || (value instanceof Map && ((Map) value).isEmpty());
 	}
 	
-	private void overwriteValues(Map<String, Object> map, Map<String, Object> values) {	
+	private void overwrite(Map<String, Object> map, Map<String, Object> values) {	
 		for(Entry<String, Object> entry : values.entrySet()) {
-			overwriteValue(map, entry.getKey(), entry.getValue());
+			overwrite(map, entry.getKey(), entry.getValue());
 		}
 	}
 }

@@ -33,7 +33,7 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 	}
 
     public Event appliedOnto(Event older) {
-        Map<String, Object> merged = new MapMerger().merge(older.data, this.data);
+        Map<String, Object> merged = merge(older.data, this.data);
         return new Event(this.epoch, this.recordId, merged);
     }
 
@@ -44,5 +44,24 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 
 	public Object get(String key) {
 		return data.get(key);
+	}
+	
+	private Map<String, Object> merge(Map<String, Object> under,
+			Map<String, Object> over) {
+		
+		if(under == null) return over;
+		if(over == null) return under;
+		
+		Map<String, Object> result = new HashMap<String, Object>();
+		result.putAll(under);
+		
+		for(Map.Entry<String, Object> entry : over.entrySet()) {
+			if(entry.getValue() instanceof Map) {
+				result.put(entry.getKey(), merge((Map<String, Object>) under.get(entry.getKey()), (Map<String, Object>) over.get(entry.getKey())));
+			} else {
+				result.put(entry.getKey(), entry.getValue());
+			}
+		}
+		return result;
 	}
 }

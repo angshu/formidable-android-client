@@ -1,3 +1,6 @@
 [submodule "dependencies/touchdb"]
 	path = dependencies/touchdb
 	url = git://github.com/couchbaselabs/TouchDB-Android.git
+[submodule "dependencies/TouchDB-Android-Lucene"]
+	path = dependencies/TouchDB-Android-Lucene
+	url = https://github.com/ArtooTrills/TouchDB-Android-Lucene.git

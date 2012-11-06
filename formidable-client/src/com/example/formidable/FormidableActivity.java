@@ -2,18 +2,13 @@ package com.example.formidable;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.codehaus.jackson.JsonNode;
 import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
 import org.ektorp.ReplicationCommand;
-import org.ektorp.ViewQuery;
-import org.ektorp.ViewResult;
-import org.ektorp.ViewResult.Row;
 import org.ektorp.impl.StdCouchDbInstance;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -48,7 +43,8 @@ public class FormidableActivity extends Activity {
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
-        initialize(savedInstanceState);       
+		super.onCreate(savedInstanceState);
+        initialize();       
         RecordRepository repository = new RecordRepository(events);
         
         String recordId = newId();     
@@ -77,7 +73,7 @@ public class FormidableActivity extends Activity {
         
     }
 
-	private void initialize(Bundle savedInstanceState) {
+	private void initialize() {
         startServer();    
         startClient();
 	}

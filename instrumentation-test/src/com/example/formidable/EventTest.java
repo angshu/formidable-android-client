@@ -51,7 +51,7 @@ public class EventTest extends TestCase {
 	   assertEquals("computer hacking", skills.get("IT"));
    }
    
-   public void testDeletion() {
+   public void testThatNullsAreDeletions() {
 	   Map<String, Object> olds = new HashMap<String, Object>();
 	   olds.put("skills", new HashMap<String, String>());
 	   ((Map<String, Object>) olds.get("skills")).put("martial", "nunchuku");
@@ -67,5 +67,19 @@ public class EventTest extends TestCase {
 	   
 	   assertFalse(skills.containsKey("martial"));
 	   assertEquals("computer hacking", skills.get("IT"));
+   }
+   
+   public void testThatEmptyMapsAreRemoved() {
+	   Map<String, Object> olds = new HashMap<String, Object>();
+	   olds.put("skills", new HashMap<String, String>());
+	   ((Map<String, Object>) olds.get("skills")).put("martial", "nunchuku");
+	   Event older = new Event(1, "", olds); 
+	   
+	   Map<String, Object> news = new HashMap<String, Object>();
+	   news.put("skills", new HashMap<String, String>());
+	   ((Map<String, Object>) news.get("skills")).put("martial", null);	   
+	   Event newer = new Event(2, "", news);
+	     
+	   assertNull(newer.appliedOnto(older).get("skills"));
    }
 }

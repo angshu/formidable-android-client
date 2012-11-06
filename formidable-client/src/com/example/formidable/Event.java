@@ -41,4 +41,8 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
     public int compareTo(Event another) {
         return this.epoch - another.epoch;
     }
+
+	public Object get(String key) {
+		return data.get(key);
+	}
 }

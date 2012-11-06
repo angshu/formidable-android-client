@@ -3,7 +3,6 @@ package com.example.formidable;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.Assert;
 import junit.framework.TestCase;
 
 public class MapMergerTest extends TestCase {

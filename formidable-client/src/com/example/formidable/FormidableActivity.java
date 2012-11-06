@@ -1,6 +1,8 @@
 package com.example.formidable;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -13,6 +15,9 @@ import org.ektorp.ViewQuery;
 import org.ektorp.ViewResult;
 import org.ektorp.ViewResult.Row;
 import org.ektorp.impl.StdCouchDbInstance;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -25,6 +30,9 @@ import com.couchbase.touchdb.TDDatabase;
 import com.couchbase.touchdb.TDServer;
 import com.couchbase.touchdb.TDView;
 import com.couchbase.touchdb.ektorp.TouchDBHttpClient;
+import com.couchbase.touchdb.lucene.TDLucene;
+import com.couchbase.touchdb.lucene.TDLucene.Callback;
+import com.couchbase.touchdb.lucene.TDLuceneRequest;
 import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
 
 public class FormidableActivity extends Activity {
@@ -36,6 +44,7 @@ public class FormidableActivity extends Activity {
 	private static final String TAG = "MainActivity";
 	private TDServer localServer;
 	CouchDbConnector events;
+	private TDLucene lucene;
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
@@ -61,10 +70,14 @@ public class FormidableActivity extends Activity {
         webSettings.setGeolocationEnabled(true);
         
         myWebView.loadUrl("http://enketo.org/launch?server=http%3A%2F%2Fformhub.org%2Fwho_forms");
+        	
+        
+		doLuceneSearch("");
+		
+        
     }
 
 	private void initialize(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);        
         startServer();    
         startClient();
 	}
@@ -76,9 +89,17 @@ public class FormidableActivity extends Activity {
 	}
 
 	private void startClient() {
-		CouchDbInstance client = new StdCouchDbInstance(new TouchDBHttpClient(localServer));
-        events = client.createConnector("events", true);
+		TouchDBHttpClient touchDBHttpClient = new TouchDBHttpClient(localServer);
+		CouchDbInstance client = new StdCouchDbInstance(touchDBHttpClient);
+		events = client.createConnector("events", true);
+		createSearchIndexer(touchDBHttpClient);
 		beginReplicating(client);
+	}
+
+	private void createSearchIndexer(TouchDBHttpClient touchDBHttpClient) {
+		touchDBHttpClient.put("/events/_design/records", "{\"fulltext\": " +
+				"{\"byName\": { \"analyzer\":\"standard\"," +
+				"\"index\": \"function(doc) { if (doc.data) { var ret=new Document(); ret.add(doc.data.name); return ret; } return null; } \"}}}");
 	}
 
 	private void startServer() {
@@ -116,4 +137,53 @@ public class FormidableActivity extends Activity {
         getMenuInflater().inflate(R.menu.activity_main, menu);
         return true;
     }
+    
+    
+    private void doLuceneSearch(String queryStr) {
+    	try {
+			if (lucene == null) {
+				lucene = new TDLucene(localServer);
+			}
+			TDLuceneRequest req = new TDLuceneRequest();
+			req.setUrl("/local/events/_design/records/byName")
+					.addParam("q", "Chris")
+					.addParam("include_docs", "true")
+					.addParam("highlights", "5");
+
+			lucene.fetch(req, new Callback() {
+				@Override
+				public void onSucess(Object resp) {
+					if (resp instanceof JSONObject) {
+						try {
+							JSONArray rows = ((JSONObject) resp).getJSONArray("rows");
+							if (rows.length() > 0) {
+								JSONArray jsonArray = rows.getJSONArray(0);
+								System.out.println("json array" + jsonArray);
+							}
+							else {
+//								System.out.println("***********************");
+//								System.out.println("Didn't find any records." + resp.toString());
+//								System.out.println("***********************");
+							}
+						} catch (JSONException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+
+				@Override
+				public void onError(Object resp) {
+					System.out.println("****** Error : " + resp.toString());
+				}
+			});
+
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+    }
+    	
 }

@@ -8,7 +8,7 @@ import junit.framework.TestCase;
 
 public class EventTest extends TestCase {
    
-   public void testThatAppliedEventDeterminesMetadata() {	   
+   public void testThatAppliedEventDeterminesEpoch() {	   
 	   Event older = new Event(1, "abc", Collections.<String, Object> emptyMap());
 	   Event newer = new Event(2, "abc", Collections.<String, Object> emptyMap());
 	   

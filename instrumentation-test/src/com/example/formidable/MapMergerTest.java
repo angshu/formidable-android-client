@@ -2,11 +2,11 @@ package com.example.formidable;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+import junit.framework.TestCase;
 
 import org.ektorp.util.Assert;
 
-public class MapMergerTest extends FormidableTestCase {
+public class MapMergerTest extends TestCase {
 
    public void testNullMapsMergeSafely() {
 	   MapMerger merger = new MapMerger();

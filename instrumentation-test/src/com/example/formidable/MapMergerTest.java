@@ -2,9 +2,9 @@ package com.example.formidable;
 
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.TestCase;
 
-import org.ektorp.util.Assert;
+import junit.framework.Assert;
+import junit.framework.TestCase;
 
 public class MapMergerTest extends TestCase {
 
@@ -16,7 +16,7 @@ public class MapMergerTest extends TestCase {
 	   
 	   Map<String, Object> record = merger.merge(null, angshu);
 	   
-	   Assert.isTrue("Angshu".equals((String) record.get("name")));
+	   assertEquals("Angshu", record.get("name"));
    }
    
    public void testPartialOverride() {
@@ -31,8 +31,8 @@ public class MapMergerTest extends TestCase {
 	   
 	   Map<String, Object> record = merger.merge(angshu, pulkit);
 	   
-	   Assert.isTrue("Pulkit".equals((String) record.get("name")));
-	   Assert.isTrue("Sarkar".equals((String) record.get("surname")));
+	   assertEquals("Pulkit", record.get("name"));
+	   assertEquals("Sarkar", record.get("surname"));
    }
    
    public void testNestedMerging() {
@@ -49,7 +49,7 @@ public class MapMergerTest extends TestCase {
 	   Map<String, Object> record = merger.merge(angshu, pulkit);	   
 	   Map<String, String> skills = (Map<String, String>) record.get("skills");
 	   
-	   Assert.isTrue("nunchuku".equals(skills.get("martial")));
-	   Assert.isTrue("computer hacking".equals(skills.get("IT")));
+	   assertEquals("nunchuku", skills.get("martial"));
+	   assertEquals("computer hacking", skills.get("IT"));
    }
 }

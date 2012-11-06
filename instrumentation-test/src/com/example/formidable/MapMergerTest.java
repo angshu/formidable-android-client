@@ -10,21 +10,24 @@ public class MapMergerTest extends FormidableTestCase {
 
    public void testNullMapsMergeSafely() {
 	   MapMerger merger = new MapMerger();
+	   
 	   Map<String, Object> angshu = new HashMap<String, Object>();
 	   angshu.put("name", "Angshu");
 	   
 	   Map<String, Object> record = merger.merge(null, angshu);
+	   
 	   Assert.isTrue("Angshu".equals((String) record.get("name")));
    }
    
    public void testPartialOverride() {
 	   MapMerger merger = new MapMerger();
+	   
 	   Map<String, Object> angshu = new HashMap<String, Object>();
 	   angshu.put("name", "Angshu");
 	   angshu.put("surname", "Sarkar");
 	   
 	   Map<String, Object> pulkit = new HashMap<String, Object>();
-	   angshu.put("name", "Pulkit");
+	   pulkit.put("name", "Pulkit");
 	   
 	   Map<String, Object> record = merger.merge(angshu, pulkit);
 	   
@@ -43,8 +46,8 @@ public class MapMergerTest extends FormidableTestCase {
 	   pulkit.put("skills", new HashMap<String, String>());
 	   ((Map<String, Object>) pulkit.get("skills")).put("IT", "computer hacking");
 	   
-	   Map<String, Object> merged = merger.merge(angshu, pulkit);	   
-	   Map<String, String> skills = (Map<String, String>) merged.get("skills");
+	   Map<String, Object> record = merger.merge(angshu, pulkit);	   
+	   Map<String, String> skills = (Map<String, String>) record.get("skills");
 	   
 	   Assert.isTrue("nunchuku".equals(skills.get("martial")));
 	   Assert.isTrue("computer hacking".equals(skills.get("IT")));

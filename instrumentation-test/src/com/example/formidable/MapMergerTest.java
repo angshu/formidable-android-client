@@ -32,21 +32,21 @@ public class MapMergerTest extends FormidableTestCase {
 	   Assert.isTrue("Sarkar".equals((String) record.get("surname")));
    }
    
-   public void testAppendingToASet() {
+   public void testNestedMerging() {
 	   MapMerger merger = new MapMerger();
 	   
 	   Map<String, Object> angshu = new HashMap<String, Object>();
 	   angshu.put("skills", new HashMap<String, String>());
-	   ((Map<String, Object>) angshu.get("skills")).put(UUID.randomUUID().toString(), "nunchuku");
+	   ((Map<String, Object>) angshu.get("skills")).put("martial", "nunchuku");
 	   
 	   Map<String, Object> pulkit = new HashMap<String, Object>();
 	   pulkit.put("skills", new HashMap<String, String>());
-	   ((Map<String, Object>) pulkit.get("skills")).put(UUID.randomUUID().toString(), "computer hacking");
+	   ((Map<String, Object>) pulkit.get("skills")).put("IT", "computer hacking");
 	   
 	   Map<String, Object> merged = merger.merge(angshu, pulkit);	   
 	   Map<String, String> skills = (Map<String, String>) merged.get("skills");
 	   
-	   Assert.isTrue(skills.containsValue("nunchuku"));
-	   Assert.isTrue(skills.containsValue("computer hacking"));
+	   Assert.isTrue("nunchuku".equals(skills.get("martial")));
+	   Assert.isTrue("computer hacking".equals(skills.get("IT")));
    }
 }

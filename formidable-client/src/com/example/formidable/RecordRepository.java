@@ -29,6 +29,6 @@ public class RecordRepository {
 		 
 		ViewResult result = events.queryView(viewQuery);
         return new RecordBuilder(result.getRows().get(0)).build();
-	}
+	}	
 
 }

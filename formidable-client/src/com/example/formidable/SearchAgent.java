@@ -32,7 +32,7 @@ public class SearchAgent {
     private void createSearchIndexer(HttpClient client) {
 		HttpResponse response = client.put("/events/_design/records", "{\"fulltext\": " +
 				"{\"byName\": { " + //\"analyzer\":\"NGRAM\"," +
-				"\"index\": \"function(doc) { var ret=new Document(); ret.add(doc.epoch); return ret; } \"}}}");
+				"\"index\": \"function(doc) { var ret=new Document(); ret.add(doc.docName); return ret; } \"}}}");
 		InputStream content = response.getContent();
 		BufferedReader reader = new BufferedReader(new InputStreamReader(content), 200);
 		String line = null;
@@ -41,7 +41,6 @@ public class SearchAgent {
 				  System.out.println(line);
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -54,7 +53,7 @@ public class SearchAgent {
 			}
 			TDLuceneRequest req = new TDLuceneRequest();
 			req.setUrl("/local/events/_design/records/byName")
-					.addParam("q", "1")
+					.addParam("q", "chris*")
 					.addParam("include_docs", "true")
 					.addParam("highlights", "5");
 

@@ -17,11 +17,19 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 	private String recordId;
 	
 	@JsonProperty
+	private String docName;
+	
+	public String getDocName() {
+		return docName;
+	}
+
+	@JsonProperty
 	private Map<String, Object> data = new HashMap<String, Object>();
 	
 	public Event(int epoch, String recordId, Map<String, Object> data) {
 		this.epoch = epoch;
 		this.recordId = recordId;
+		this.docName = (String) data.get("name");
         this.data.putAll(data);
 	}	
 	

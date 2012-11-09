@@ -3,8 +3,9 @@
 git submodule init
 git submodule update
 
-android update project -s --path dependencies/touchdb
-android update project -s --path formidable-client 
-android update project -s --path instrumentation-test 
-android update project -s --path dependencies/TouchDB-Android-Lucene
+android update project --path formidable-client 
+android update project --path instrumentation-test 
+android update project --path dependencies/touchdb/TouchDB-Android
+android update project --path dependencies/touchdb/TouchDB-Android-Ektorp
+android update project --path dependencies/TouchDB-Android-Lucene
 

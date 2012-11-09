@@ -32,7 +32,7 @@ public class SearchAgent {
     private void createSearchIndexer(HttpClient client) {
 		HttpResponse response = client.put("/events/_design/records", "{\"fulltext\": " +
 				"{\"byName\": { " + //\"analyzer\":\"NGRAM\"," +
-				"\"index\": \"function(doc) { var ret=new Document(); ret.add(doc.docName); return ret; } \"}}}");
+				"\"index\": \"function(doc) { if (typeof doc.data != \"undefined\") { var ret=new Document(); ret.add(doc.data.name); return ret; } else {return null;} \"}}}");
 		InputStream content = response.getContent();
 		BufferedReader reader = new BufferedReader(new InputStreamReader(content), 200);
 		String line = null;

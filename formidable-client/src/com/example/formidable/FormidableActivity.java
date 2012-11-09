@@ -28,7 +28,7 @@ public class FormidableActivity extends Activity {
         RecordRepository repository = eventSource.getRepository();
         
         String recordId = newId();     
-        //repository.put(createSimpleEvent(3, recordId, "surname", "Bhuwalka"));     
+        repository.put(createSimpleEvent(3, recordId, "surname", "Bhuwalka"));     
         repository.put(createSimpleEvent(2, recordId, "name", "Angshu"));
         repository.put(createSimpleEvent(1, recordId, "name", "Chris"));
         		

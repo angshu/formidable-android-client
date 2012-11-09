@@ -27,15 +27,9 @@ public class EventSource {
 	    startClient();
 	}
 	
-	public CouchDbConnector getConnector() {
-		return events;
-	}
-	
 	public SearchAgent getSearchAgent() {
 		return searchAgent;
 	}
-	
-	
 	
 	private void startServer(Context context) {
         String filesDir = context.getFilesDir().getAbsolutePath();
@@ -69,6 +63,10 @@ public class EventSource {
 			.build();
 	
 		client.replicate(push);
+	}
+
+	public RecordRepository getRepository() {
+		return new RecordRepository(events);
 	}
 	
 

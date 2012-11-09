@@ -25,7 +25,7 @@ public class FormidableActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
         initialize();       
-        RecordRepository repository = new RecordRepository(eventSource.getConnector());
+        RecordRepository repository = eventSource.getRepository();
         
         String recordId = newId();     
         repository.put(createSimpleEvent(3, recordId, "surname", "Bhuwalka"));     

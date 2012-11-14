@@ -32,16 +32,34 @@ public class SearchAgent {
     private void createSearchIndexer(HttpClient client) {
 		HttpResponse response = client.put("/events/_design/records", "{\"fulltext\": " +
 				"{\"byName\": { " + //\"analyzer\":\"NGRAM\"," +
-				"\"index\": \"function(doc) { if (typeof doc.data != \"undefined\") { var ret=new Document(); ret.add(doc.data.name); return ret; } else {return null;} \"}}}");
+				 "\"index\": \"function(doc) { " +
+				 				"if (typeof doc.data != undefined) { "  +
+				 				//"if (1==1)  { " +
+				 					"var ret=new Document(); ret.add(doc.data.name); " +
+				 					"return ret; " +
+				 				//"} "  +	
+			 					"} else return null; " +
+			 				  "}\" " +
+				 "}}}");
+				 //"\"index\": \"function(doc) { var ret=new Document(); ret.add(doc.epoch); return ret; }\" }}}");
+				
+		System.out.println(String.format("******** PUT Search Indexer response, success: %b; code: %d", response.isSuccessful(), response.getCode()));
 		InputStream content = response.getContent();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(content), 200);
+		BufferedReader reader = new BufferedReader(new InputStreamReader(content), 500);
 		String line = null;
 		try {
 			while((line = reader.readLine()) != null) {
-				  System.out.println(line);
+				  System.out.println("******** Search Indexer creation response: " + line);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+		} finally {
+			try {
+				reader.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 

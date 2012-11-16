@@ -40,7 +40,7 @@ public class SearchAgent {
 			}
 			TDLuceneRequest req = new TDLuceneRequest();
 			req.setUrl("/local/events/_design/records/byName")
-					.addParam("q", "chris*")
+					.addParam("q", "name:chris*")
 					.addParam("include_docs", "true")
 					.addParam("highlights", "5");
 

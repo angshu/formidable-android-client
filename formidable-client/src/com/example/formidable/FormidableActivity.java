@@ -28,9 +28,12 @@ public class FormidableActivity extends Activity {
         RecordRepository repository = eventSource.getRepository();
         
         String recordId = newId();     
-        repository.put(createSimpleEvent(3, recordId, "surname", "Bhuwalka"));     
-        repository.put(createSimpleEvent(2, recordId, "name", "Angshu"));
-        repository.put(createSimpleEvent(1, recordId, "name", "Chris"));
+        repository.put(createSimpleEvent(3, recordId, "surname:Bhuwalka"));     
+        repository.put(createSimpleEvent(2, recordId, "name:Angshu"));
+        repository.put(createSimpleEvent(1, recordId, "name:Chris"));
+        
+        //check search functionality
+        repository.put(createSimpleEvent(1, newId(), "name:Vivek", "surname:Singh"));
         		
 		Map<String, Object> record = repository.get(recordId);
 		System.out.println(String.format("Name: %s %s", record.get("name"), record.get("surname")));
@@ -58,9 +61,12 @@ public class FormidableActivity extends Activity {
 		this.eventSource = new EventSource(this);
 	}
 
-	private Event createSimpleEvent(int epoch, String recordId, String key, String value) {
+	private Event createSimpleEvent(int epoch, String recordId, String... arguments) {
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put(key, value);
+        for (String arg : arguments) {
+        	String[] parts = arg.split(":");
+        	map.put(parts[0], parts[1]);
+        }
 		return new Event(epoch, recordId, map);		
 	}
 

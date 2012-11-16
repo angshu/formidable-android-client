@@ -44,7 +44,7 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
         return new Event(this.epoch, this.recordId, merged);
     }
 
-    @Override
+    //@Override
     public int compareTo(Event another) {
         return this.epoch - another.epoch;
     }

@@ -1,9 +1,6 @@
 package com.example.formidable;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 
 import org.ektorp.CouchDbConnector;
@@ -14,8 +11,8 @@ import org.json.JSONObject;
 
 import com.couchbase.touchdb.TDServer;
 import com.couchbase.touchdb.lucene.TDLucene;
-import com.couchbase.touchdb.lucene.TDLuceneRequest;
 import com.couchbase.touchdb.lucene.TDLucene.Callback;
+import com.couchbase.touchdb.lucene.TDLuceneRequest;
 
 public class SearchAgent {
 	public TDServer localServer;
@@ -30,37 +27,9 @@ public class SearchAgent {
 	
 
     private void createSearchIndexer(HttpClient client) {
-		HttpResponse response = client.put("/events/_design/records", "{\"fulltext\": " +
-				"{\"byName\": { " + //\"analyzer\":\"NGRAM\"," +
-				 "\"index\": \"function(doc) { " +
-				 				"if (typeof doc.data != undefined) { "  +
-				 				//"if (1==1)  { " +
-				 					"var ret=new Document(); ret.add(doc.data.name); " +
-				 					"return ret; " +
-				 				//"} "  +	
-			 					"} else return null; " +
-			 				  "}\" " +
-				 "}}}");
-				 //"\"index\": \"function(doc) { var ret=new Document(); ret.add(doc.epoch); return ret; }\" }}}");
-				
-		System.out.println(String.format("******** PUT Search Indexer response, success: %b; code: %d", response.isSuccessful(), response.getCode()));
-		InputStream content = response.getContent();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(content), 500);
-		String line = null;
-		try {
-			while((line = reader.readLine()) != null) {
-				  System.out.println("******** Search Indexer creation response: " + line);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				reader.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
+    	String idxFn = Messages.getString("search.indexerFunction");
+    	HttpResponse response = client.put("/events/_design/records", idxFn);
+		System.out.println(String.format("SearchAgent.createSearchIndexer => succeeded: %b; http code: %d", response.isSuccessful(), response.getCode()));
 	}
 
 
@@ -99,7 +68,7 @@ public class SearchAgent {
 
 				@Override
 				public void onError(Object resp) {
-					System.out.println("****** Error : " + resp.toString());
+					System.out.println("SearchAgent.triggerSearch => Error : " + resp.toString());
 				}
 			});
 

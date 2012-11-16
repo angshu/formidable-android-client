@@ -15,7 +15,6 @@ public class CurrentState {
 
     private TDViewMapBlock map() {
         return new TDViewMapBlock() {
-            @Override
             public void map(Map<String, Object> document, TDViewMapEmitBlock emitter) {
                 //List<Object> recordTimeKey = Arrays.asList(document.get("recordId"), document.get("epoch"));
 				//emitter.emit(recordTimeKey, document);
@@ -26,7 +25,6 @@ public class CurrentState {
 
     private TDViewReduceBlock reduce() {
         return new TDViewReduceBlock() {
-            @Override
             public Object reduce(List<Object> keys, List<Object> values, boolean rereduce) {
                 List<Event> events = hydrateEvents(values);
                 return new EventAggregation(events).replay();

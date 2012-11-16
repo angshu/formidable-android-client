@@ -52,7 +52,7 @@ public class EventSource {
 		CouchDbInstance client = new StdCouchDbInstance(touchDBHttpClient);
 		events = client.createConnector("events", true);
 		searchAgent = new SearchAgent(events.getConnection(), localServer);
-		//beginReplicating(client);
+		beginReplicating(client);
 	}
 
 	private void beginReplicating(CouchDbInstance client) {		

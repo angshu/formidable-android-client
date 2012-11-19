@@ -6,6 +6,7 @@ import java.net.MalformedURLException;
 import org.ektorp.CouchDbConnector;
 import org.ektorp.http.HttpClient;
 import org.ektorp.http.HttpResponse;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -27,7 +28,7 @@ public class SearchAgent {
 	
 
     private void createSearchIndexer(HttpClient client) {
-    	String idxFn = Messages.getString("search.indexerFunction");
+    	String idxFn = Configuration.getIndexerFuncDescr();
     	HttpResponse response = client.put("/events/_design/records", idxFn);
 		System.out.println(String.format("SearchAgent.createSearchIndexer => succeeded: %b; http code: %d", response.isSuccessful(), response.getCode()));
 	}
@@ -39,30 +40,32 @@ public class SearchAgent {
 				lucene = new TDLucene(localServer);
 			}
 			TDLuceneRequest req = new TDLuceneRequest();
-			req.setUrl("/local/events/_design/records/byName")
-					.addParam("q", "name:chris*")
+			req.setUrl("/local/events/_design/records/byContent")
+					.addParam("q", criteria)
 					.addParam("include_docs", "true")
 					.addParam("highlights", "5");
 
 			lucene.fetch(req, new Callback() {
 				@Override
-				public void onSucess(Object resp) {
-					if (resp instanceof JSONObject) {
-						System.out.println("Lucene response:" + resp.toString());
-//						try {
-//							JSONArray rows = ((JSONObject) resp).getJSONArray("rows");
-//							if (rows.length() > 0) {
-//								JSONArray jsonArray = rows.getJSONArray(0);
-//								System.out.println("json array" + jsonArray);
-//							}
-//							else {
-//								System.out.println("***********************");
-//								System.out.println("Didn't find any records." + resp.toString());
-//								System.out.println("***********************");
-//							}
-//						} catch (JSONException e) {
-//							e.printStackTrace();
-//						}
+				public void onSucess(Object response) {
+					if (response instanceof JSONObject) {
+						System.out.println("Lucene response:" + response.toString());
+						JSONObject results = ((JSONObject) response);
+						try {
+							int noOfRecords = results.getInt("total_rows");
+							if (noOfRecords > 0) {
+								JSONArray rows = results.getJSONArray("rows");
+								JSONObject[] records = new JSONObject[noOfRecords];
+								for (int i = 0; i < noOfRecords; i++) {
+									records[i] = rows.getJSONObject(i);
+									System.out.println("search result record => %s".format(records[i].toString()));
+									//we should probably create something Event.parse(JSOBObject) to get a Event object out of json
+									//and return an array of Event Objects
+								}
+							}
+						} catch (JSONException e) {
+							e.printStackTrace();
+						}
 					}
 				}
 

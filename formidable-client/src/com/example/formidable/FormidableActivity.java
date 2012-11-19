@@ -39,7 +39,7 @@ public class FormidableActivity extends Activity {
 		System.out.println(String.format("Name: %s %s", record.get("name"), record.get("surname")));
         
         initializeView();
-        eventSource.getSearchAgent().triggerSearch("chris*");
+        eventSource.getSearchAgent().triggerSearch("name:vivek AND surname:singh");
         
     }
 
@@ -50,11 +50,10 @@ public class FormidableActivity extends Activity {
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDatabaseEnabled(true);
         webSettings.setDomStorageEnabled(true);
-        webSettings.setGeolocationDatabasePath("/data/data/com.example.formidable/databases");
+        webSettings.setGeolocationDatabasePath(Configuration.getGeolocDbPath());
         webSettings.setGeolocationEnabled(true);
         
-        //myWebView.loadUrl("http://enketo.org/launch?server=http%3A%2F%2Fformhub.org%2Fwho_forms");
-        myWebView.loadUrl("http:/m.google.com");
+        myWebView.loadUrl("http://enketo.org/launch?server=http%3A%2F%2Fformhub.org%2Fwho_forms");
 	}
 
 	private void initialize() {

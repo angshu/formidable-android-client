@@ -42,7 +42,7 @@ public class EventSource {
 	}
 	
 	private void startViews() {
-		TDDatabase db = localServer.getDatabaseNamed("events");
+		TDDatabase db = localServer.getDatabaseNamed(Configuration.getDatabaseName());
 		TDView view = db.getViewNamed("records/latest");
 		new CurrentState().setMapReduceBlocksFor(view);
 	}
@@ -50,15 +50,15 @@ public class EventSource {
 	private void startClient() {
 		TouchDBHttpClient touchDBHttpClient = new TouchDBHttpClient(localServer);
 		CouchDbInstance client = new StdCouchDbInstance(touchDBHttpClient);
-		events = client.createConnector("events", true);
+		events = client.createConnector(Configuration.getDatabaseName(), true);
 		searchAgent = new SearchAgent(events.getConnection(), localServer);
 		beginReplicating(client);
 	}
 
 	private void beginReplicating(CouchDbInstance client) {		
 		ReplicationCommand push = new ReplicationCommand.Builder()
-			.source("events")
-			.target(Messages.getString("FormidableActivity.serverURL"))
+			.source(Configuration.getDatabaseName())
+			.target(Configuration.getServerURL())
 			.continuous(true)
 			.build();
 	

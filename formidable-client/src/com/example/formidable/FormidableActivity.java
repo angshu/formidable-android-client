@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.json.JSONObject;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -39,7 +41,22 @@ public class FormidableActivity extends Activity {
 		System.out.println(String.format("Name: %s %s", record.get("name"), record.get("surname")));
         
         initializeView();
-        eventSource.getSearchAgent().triggerSearch("name:vivek AND surname:singh");
+        eventSource.getSearchAgent().triggerSearch("name:vivek AND surname:singh", new SearchCallback() {
+			@Override
+			void onSearchSuccess(JSONObject[] results) {
+				for (JSONObject result : results) {
+					//we should probably create something Event.parse(JSOBObject) to get a Event object out of json
+					//and return an array of Event Objects. parse method can extract attributes like
+					//epoch, docid, revid, and all the elements in the data element recursively
+					System.out.println("search result record => %s".format(result.toString()));
+				}
+			}
+			
+			@Override
+			void onSearchError(Object resp) {
+				System.out.println("SearchAgent.triggerSearch => Error : " + resp.toString());
+			}
+		});
         
     }
 

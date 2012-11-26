@@ -24,7 +24,16 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 		this.epoch = epoch;
 		this.recordId = recordId;
         this.data.putAll(data);
-	}	
+	}
+	
+	public Event(int epoch, String recordId) {
+		this.epoch = epoch;
+		this.recordId = recordId;
+	}
+	
+	public void addAttribute(String key, Object value) {
+		this.data.put(key, value);
+	}
 	
 	public int getEpoch() {
 		return epoch;
@@ -52,6 +61,7 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 	public Object get(String key) {
 		return data.get(key);
 	}
+	
 	
 	private Map<String, Object> merge(Map<String, Object> under,
 			Map<String, Object> over) {

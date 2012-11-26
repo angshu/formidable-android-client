@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
@@ -62,15 +64,17 @@ public class FormidableActivity extends Activity {
 
 	private void initializeView() {
 		setContentView(R.layout.activity_main);
-        WebView myWebView = (WebView) findViewById(R.id.webview);
-        WebSettings webSettings = myWebView.getSettings();
+        WebView browser = (WebView) findViewById(R.id.webview);
+        WebSettings webSettings = browser.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDatabaseEnabled(true);
         webSettings.setDomStorageEnabled(true);
         webSettings.setGeolocationDatabasePath(Configuration.getGeolocDbPath());
         webSettings.setGeolocationEnabled(true);
         
-        myWebView.loadUrl("http://enketo.org/launch?server=http%3A%2F%2Fformhub.org%2Fwho_forms");
+        browser.addJavascriptInterface(new JSRepoHandler(eventSource.getRepository()), "_eventRepo");
+        browser.loadUrl(formateUrl("new_event.html"));
+        //browser.loadUrl("http://enketo.org/launch?server=http%3A%2F%2Fformhub.org%2Fwho_forms");
 	}
 
 	private void initialize() {
@@ -99,6 +103,53 @@ public class FormidableActivity extends Activity {
         getMenuInflater().inflate(R.menu.activity_main, menu);
         return true;
     }
+    
+    
+    private String formateUrl(String url) {
+		return "file:///android_asset/" + url;
+	}
+    
+    
+    public class JSRepoHandler {
+    	private RecordRepository repository;
+
+		public JSRepoHandler(RecordRepository repository) {
+			this.repository = repository;
+    	}
+		
+		public void addEvent(String eventProps) {
+			//System.out.println("***** eventProps = " + eventProps);
+			try {
+				JSONObject json = new JSONObject(eventProps);
+				String epoch = json.optString("epoch");
+				String recordId = json.optString("recordId");
+				if (!validStr(epoch)) {
+					epoch = "1";
+				}
+				if (!validStr(recordId)) {
+					recordId = newId();
+				}
+				
+				Event event = new Event(Integer.valueOf(epoch), recordId);
+				
+				JSONArray names = json.names();
+				for (int i=0; i<names.length(); i++) {
+					String key = (String) names.get(i);
+					String value = (String) json.get(key);
+					event.addAttribute(key, value);
+					//System.out.println(String.format("%s = %s", key, value));
+				}
+				repository.put(event);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}		
+		
+    }
+    
+    private boolean validStr(String value) {
+		return (value != null) && (!"".equals(value));
+	}
     
     
     

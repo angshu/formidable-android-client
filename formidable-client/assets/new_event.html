@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta content='width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
+    <title>Default Form</title>
+    <noscript>This page requires javascript and a Chrome or WebKit browser</noscript>
+    <script src="js/collect.js"></script>
+    <link rel="stylesheet" type="text/css" href="libs/jquery.mobile-1.2.0/jquery.mobile-1.2.0.css">
+    <link rel="stylesheet" type="text/css" href="css/odk-collect.css">
+    <link href="libs/mobiscroll/css/mobiscroll-2.0.3.custom.min.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+	<script type="text/javascript">
+		var fieldCounter = 0;
+		function add_attribute(){
+			fieldCounter++;
+
+			var container = document.createElement('div');
+			
+			var newAttrib = document.createElement('input');
+			newAttrib.id   ='f' + fieldCounter;
+			newAttrib.value='f' + fieldCounter;
+			newAttrib.fType = 'eField';
+
+			newAttrib.addEventListener(
+			    'change', 
+			    function() { 
+			     	var ipElement = findInputFor(this.id); 
+			     	if (ipElement) {
+			     		ipElement.fieldFor = this.value;
+			     	}
+			    },
+			    false
+			);
+			
+			var newInput = document.createElement('input');
+			newInput.fType = 'eValue';
+			newInput.id   ='fip' + fieldCounter;
+			newInput.fieldFor = 'f'+fieldCounter;
+			
+			var newLabel = document.createElement('label');
+			newLabel.htmlFor = 'fip'+fieldCounter;
+			newLabel.innerHTML = 'Attribute'; 
+
+			document.forms.event.appendChild(container);
+			container.appendChild(newLabel);
+			container.appendChild(newAttrib);
+			container.appendChild(newInput);
+		}
+
+		function findInputFor(fieldId) {
+			for(i=0; i<document.forms.event.elements.length; i++) {
+				var aEle = document.forms.event.elements[i];
+				if ((aEle.fType=='eValue') && (aEle.fieldFor==fieldId)) {
+					return aEle;
+				}
+			}
+			return null;
+		} 
+
+		function capture_event() {
+			var event = {};
+			for(i=0; i<document.forms.event.elements.length; i++) {
+				var aEle = document.forms.event.elements[i];
+				if (aEle.id=='epoch') {
+					event['epoch'] = aEle.value;
+				} else if (aEle.fType) {
+					if (aEle.fType == 'eValue') {
+						event[aEle.fieldFor] = aEle.value;
+					}
+				}
+			}
+			
+			_eventRepo.addEvent(JSON.stringify(event));
+			document.location.reload();
+		}
+
+	</script>
+	<input type="button" name="new_attribute" id="new_attribute" value="Add Attribute" onclick="add_attribute();">
+	<br>
+	<form name="event" action="html_form_action.asp" method="get">
+		<label for="epoch">Epoch</label><input name="epoch" id="epoch" type="input" value=""></input><br>
+	</form> 
+	<input type="button" value="Submit" onclick="capture_event();">
+
+</body>
+</html>

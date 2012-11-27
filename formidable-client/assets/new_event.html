@@ -60,18 +60,21 @@
 		} 
 
 		function capture_event() {
-			var event = {};
+			var data = {};
+			var epoch = 0;
+			var recordId = '';
+
 			for(i=0; i<document.forms.event.elements.length; i++) {
 				var aEle = document.forms.event.elements[i];
 				if (aEle.id=='epoch') {
-					event['epoch'] = aEle.value;
-				} else if (aEle.fType) {
-					if (aEle.fType == 'eValue') {
-						event[aEle.fieldFor] = aEle.value;
-					}
+					epoch = aEle.value;
+				} else if (aEle.fType && aEle.fType=='eValue') {
+					data[aEle.fieldFor] = aEle.value;
 				}
 			}
 			
+			var event = {'data': data, 'epoch': epoch, 'recordId': recordId};
+			console.log(JSON.stringify(event));
 			_eventRepo.addEvent(JSON.stringify(event));
 			document.location.reload();
 		}

@@ -132,10 +132,11 @@ public class FormidableActivity extends Activity {
 				
 				Event event = new Event(Integer.valueOf(epoch), recordId);
 				
-				JSONArray names = json.names();
+				JSONObject data = json.getJSONObject("data");
+				JSONArray names = data.names();
 				for (int i=0; i<names.length(); i++) {
 					String key = (String) names.get(i);
-					String value = (String) json.get(key);
+					String value = (String) data.get(key);
 					event.addAttribute(key, value);
 					//System.out.println(String.format("%s = %s", key, value));
 				}

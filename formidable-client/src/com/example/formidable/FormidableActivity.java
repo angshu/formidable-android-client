@@ -111,11 +111,11 @@ public class FormidableActivity extends Activity {
     
     
     public class JSRepoHandler {
-    	private RecordRepository repository;
+    		private RecordRepository repository;
 
 		public JSRepoHandler(RecordRepository repository) {
 			this.repository = repository;
-    	}
+    		}
 		
 		public void addEvent(String eventProps) {
 			//System.out.println("***** eventProps = " + eventProps);

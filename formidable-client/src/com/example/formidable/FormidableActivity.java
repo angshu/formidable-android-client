@@ -8,6 +8,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -16,6 +17,7 @@ import android.webkit.WebView;
 
 import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
 
+@SuppressLint("SetJavaScriptEnabled")
 public class FormidableActivity extends Activity {
 	
 	static {

@@ -38,6 +38,12 @@ public class FormidableTest extends FormidableTestCase {
                 .containsValue("computer hacking"));
     }
 
+    public void testReadingRecordWhichDoesNotExist() {
+        RecordRepository repository = new RecordRepository(super.events);
+
+        repository.get("randomRecordId");
+    }
+
     public void testSimpleKeyValueEvents() {
         RecordRepository repository = new RecordRepository(super.events);
 

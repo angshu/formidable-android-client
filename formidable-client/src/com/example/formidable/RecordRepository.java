@@ -1,5 +1,6 @@
 package com.example.formidable;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -28,6 +29,10 @@ public class RecordRepository {
          .key(recordId);
 		 
 		ViewResult result = events.queryView(viewQuery);
+
+        // TODO: decide whether this should return null, blank object or throw an exception. #apidesign
+        if (result.getRows().size() == 0) return new HashMap<String, Object>();
+
         return new RecordBuilder(result.getRows().get(0)).build();
 	}	
 

@@ -1,18 +1,25 @@
 package com.example.formidable;
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
+import android.webkit.ConsoleMessage;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
+import android.webkit.WebStorage.QuotaUpdater;
 import android.webkit.WebView;
 
 import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
@@ -26,6 +33,7 @@ public class FormidableActivity extends Activity {
 
 	//private static final String TAG = "MainActivity";
 	private EventSource eventSource;
+	
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
@@ -44,39 +52,55 @@ public class FormidableActivity extends Activity {
 		Map<String, Object> record = repository.get(recordId);
 		System.out.println(String.format("Name: %s %s", record.get("name"), record.get("surname")));
         
-        initializeView();
-        eventSource.getSearchAgent().triggerSearch("name:vivek AND surname:singh", new SearchCallback() {
-			@Override
-			void onSearchSuccess(JSONObject[] results) {
-				for (JSONObject result : results) {
-					//we should probably create something Event.parse(JSOBObject) to get a Event object out of json
-					//and return an array of Event Objects. parse method can extract attributes like
-					//epoch, docid, revid, and all the elements in the data element recursively
-					System.out.println("search result record => %s".format(result.toString()));
-				}
-			}
-			
-			@Override
-			void onSearchError(Object resp) {
-				System.out.println("SearchAgent.triggerSearch => Error : " + resp.toString());
-			}
-		});
-        
+        WebView view = initView();
+        view.loadUrl(formateUrl("webapp/default/index.html"));
+        search(eventSource, "name:vivek AND surname:singh");
+    }
+	
+	@Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.activity_main, menu);
+        return true;
     }
 
-	private void initializeView() {
+	private WebView initView() {
 		setContentView(R.layout.activity_main);
         WebView browser = (WebView) findViewById(R.id.webview);
-        WebSettings webSettings = browser.getSettings();
-        webSettings.setJavaScriptEnabled(true);
-        webSettings.setDatabaseEnabled(true);
-        webSettings.setDomStorageEnabled(true);
-        webSettings.setGeolocationDatabasePath(Configuration.getGeolocDbPath());
-        webSettings.setGeolocationEnabled(true);
+        browser.setWebChromeClient(new WebChromeClient() {
+      	  @Override
+      	  public void onExceededDatabaseQuota(String url,
+					String databaseIdentifier, long quota,
+					long estimatedDatabaseSize, long totalQuota,
+					QuotaUpdater quotaUpdater) {
+      		  quotaUpdater.updateQuota(estimatedDatabaseSize * 2);
+      	  }
+      	   
+
+      	  public boolean onConsoleMessage(ConsoleMessage cm) {
+      	    Log.d("MyApplication", cm.message() + " -- From line "
+      	                         + cm.lineNumber() + " of "
+      	                         + cm.sourceId() );
+      	    return true;
+      	  }
+      	});
+        
+        WebSettings settings = browser.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDatabaseEnabled(true);
+        
+//        String databasePath = this.getApplicationContext().getDir("database", MODE_PRIVATE).getPath();
+//        System.out.println("****** Database path = " + databasePath);
+        settings.setDatabasePath("/data/data/com.example.formidable/databases");
+        
+        settings.setDomStorageEnabled(true);
+        settings.setGeolocationDatabasePath(Configuration.getGeolocDbPath());
+        settings.setGeolocationEnabled(true);
+        settings.setAllowFileAccess(true);
         
         browser.addJavascriptInterface(new JSRepoHandler(eventSource.getRepository()), "_eventRepo");
-        browser.loadUrl(formateUrl("new_event.html"));
+        //browser.loadUrl("http://"+getLocalIpAddress()+":"+PORT);
         //browser.loadUrl("http://enketo.org/launch?server=http%3A%2F%2Fformhub.org%2Fwho_forms");
+        return browser;
 	}
 
 	private void initialize() {
@@ -96,19 +120,52 @@ public class FormidableActivity extends Activity {
 
 	private String newId() {
 		return UUID.randomUUID().toString();
-	}
-	
-	
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.activity_main, menu);
-        return true;
-    }
-    
+	}    
     
     private String formateUrl(String url) {
-		return "file:///android_asset/" + url;
+    	return "file:///android_asset/" + url;
+	}
+    
+    private boolean validStr(String value) {
+		return (value != null) && (!"".equals(value));
+	}
+    
+    private void search(EventSource src, String criteria) {
+		src.getSearchAgent().triggerSearch(criteria, new SearchHandler() {
+			@Override
+			void realize(JSONObject[] results) {
+				for (JSONObject result : results) {
+					//we should probably create something Event.parse(JSOBObject) to get a Event object out of json
+					//and return an array of Event Objects. parse method can extract attributes like
+					//epoch, docid, revid, and all the elements in the data element recursively
+					//System.out.println("search result record => %s".format(result.toString()));
+				}
+			}
+			
+			@Override
+			void fault(Object resp) {
+				System.out.println("SearchAgent.triggerSearch => Error : " + resp.toString());
+			}
+		});
+	}
+    
+	private String getLocalIpAddress() {
+		try {
+			for (Enumeration en = NetworkInterface.getNetworkInterfaces(); en
+					.hasMoreElements();) {
+				NetworkInterface intf = (NetworkInterface) en.nextElement();
+				for (Enumeration enumIpAddr = intf.getInetAddresses(); enumIpAddr
+						.hasMoreElements();) {
+					InetAddress inetAddress = (InetAddress) enumIpAddr.nextElement();
+					if (!inetAddress.isLoopbackAddress()) {
+						return inetAddress.getHostAddress().toString();
+					}
+				}
+			}
+		} catch (SocketException ex) {
+			Log.e("Exception", ex.toString());
+		}
+		return null;
 	}
     
     
@@ -149,12 +206,6 @@ public class FormidableActivity extends Activity {
 		}		
 		
     }
-    
-    private boolean validStr(String value) {
-		return (value != null) && (!"".equals(value));
-	}
-    
-    
     
     	
 }

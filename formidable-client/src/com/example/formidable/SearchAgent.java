@@ -32,7 +32,7 @@ public class SearchAgent {
 	}
 
 
-	public void triggerSearch(String criteria, SearchCallback callback) {
+	public void triggerSearch(String criteria, SearchHandler callback) {
 		try {
 			if (lucene == null) {
 				lucene = new TDLucene(localServer);

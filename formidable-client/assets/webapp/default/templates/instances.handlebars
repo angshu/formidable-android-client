@@ -1,0 +1,29 @@
+<div>
+    <h1 style="float:left;">{{localize formTitle}}</h1>
+    {{#if formVersion}}
+        <p style="float:left;">version:{{formVersion}}</p>
+    {{/if}}
+    <div style="clear:both"></div>
+    <center><img src="{{ headerImg }}" width="50%"/></center>
+    <a class="createInstance" data-role="button" data-icon="new" data-iconpos="top">Create new instance</a>
+</div>
+<h3>Previous instances:</h3>
+<ul data-role="listview" data-theme="d" data-divider-theme="d">
+    {{#each instances}}
+        {{#if dateDivider}}
+            <li data-role="list-divider">{{dateDivider}}</li>
+        {{/if}}
+        <li>
+            <h3>{{instanceName}}</h3>
+            <p><strong>Last Save Date:</strong></p>
+            <p>{{last_saved_timestamp}}</p>
+            {{#if saved_status}}<p>finalized</p>{{/if}}
+			<fieldset class="ui-grid-a">
+					<div class="ui-block-a"><button id="{{instance_id}}" class="odk openInstance">edit</button></div>
+					<div class="ui-block-b"><button id="{{instance_id}}" class="odk deleteInstance">delete</button></div>
+		    </fieldset>
+        </li>
+    {{else}}
+        <li>No saved instances.</li>
+    {{/each}}
+</ul>

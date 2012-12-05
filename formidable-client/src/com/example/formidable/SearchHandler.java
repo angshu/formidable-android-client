@@ -6,7 +6,7 @@ import org.json.JSONObject;
 
 import com.couchbase.touchdb.lucene.TDLucene.Callback;
 
-public abstract class SearchCallback extends Callback {
+public abstract class SearchHandler extends Callback {
 	@Override
 	public void onSucess(Object response) {
 		if (response instanceof JSONObject) {
@@ -21,21 +21,21 @@ public abstract class SearchCallback extends Callback {
 						records[i] = rows.getJSONObject(i);
 					}
 				}
-				onSearchSuccess(records);
+				realize(records);
 			} catch (JSONException e) {
 				e.printStackTrace();
-				onSearchError(e);
+				fault(e);
 			}
 		} else {
-			onSearchError("Can not process search response. Response is not a JSONObject!");
+			fault("Can not process search response. Response is not a JSONObject!");
 		}
 	}
 
 	@Override
 	public void onError(Object resp) {
-		onSearchError(resp);
+		fault(resp);
 	}
 	
-	abstract void onSearchSuccess(JSONObject[] results);
-	abstract void onSearchError(Object resp);
+	abstract void realize(JSONObject[] results);
+	abstract void fault(Object resp);
 }

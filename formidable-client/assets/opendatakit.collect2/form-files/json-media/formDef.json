@@ -1,0 +1,217 @@
+{
+    "settings": [
+        {
+            "setting": "tableId",
+            "value": "json1245"
+        },
+        {
+            "setting": "formId",
+            "value": "json"
+        },
+        {
+            "setting": "formVersion",
+			"value": "media"
+        },
+        {
+            "setting": "formTitle",
+            "value": {
+                "en_us": "JSON Test Form"
+                }
+        },
+        {
+            "setting": "formLogo",
+            "value": "img/form_logo.png"
+        }
+    ],
+    "survey": [
+        {
+            "type": "acknowledge",
+            "name": "acknowledgeTest", 
+            "label": "Acknowledge test",
+            "autoAdvance": true
+        },
+        {
+            "prompts": [
+                {
+                    "type": "text", 
+                    "disabled": true,
+                    "name": "name", 
+                    "image": "img/test.gif",
+                    "audio": "http://upload.wikimedia.org/wikipedia/commons/b/ba/Ru-audio_template-Wikipedia.ogg",
+                    "param": null, 
+                    "label": {
+                        "en_us": "A read-only field with image, audio and video prompts showing your name {{name.value}}:"
+                    },
+                    "hint": "This is a hint"
+                }, 
+                {
+                    "type": "integer", 
+                    "name": "age", 
+                    "param": null, 
+                    "label": {
+                        "en_us": "Enter your age:"
+                    }
+                }, 
+                {
+                    "type": "number", 
+                    "name": "bmi", 
+                    "param": null, 
+                    "label": {
+                        "en_us": "Enter your bmi:"
+                    }
+                },
+                {
+                    "type": "select_one", 
+                    "name": "gender", 
+                    "param": "gender",
+                    "htmlAttributes": {
+                        "data-type": "horizontal"
+                    },
+                    "label": {
+                        "en_us": "Enter your gender:"
+                    }
+                }
+            ], 
+            "type": "screen", 
+            "name": "testScreen",
+            "label":  {
+                "en_us": "Screen Group"
+            }
+        }, 
+        {
+            "type": "goto_if",
+            "param": "test2",
+            "condition": "{{name}}.length > 7"
+        },
+        {
+            "name": "name", 
+            "constraint": "{{name}}.length > 4",
+			"constraint_message": "Name is too short -- enter a longer name",
+            "type": "text", 
+            "param": null, 
+            "label": {
+                "en_us": "Your name is blank -- please enter it!"
+            }
+        }, 
+        {
+            "type": "label", 
+            "param": "test2"
+        },
+        {
+            "type": "audio", 
+            "name": "audio_test", 
+            "param": null, 
+            "label": {
+                "en_us": "Audio capture test"
+            }
+        }, 
+        {
+            "type": "video", 
+            "name": "video_test", 
+            "param": null, 
+            "label": {
+                "en_us": "Video capture test"
+            }
+        }, 
+        {
+            "type": "image", 
+            "name": "image_test", 
+            "param": null, 
+            "label": {
+                "en_us": "Image capture test"
+            }
+        }, 
+        {
+            "name": "specialTemplateTest", 
+            "label": {
+                "en_us": "Custom template test (hover over circle and watch it highlight):"
+            }, 
+            "type": "text", 
+            "param": null, 
+            "templatePath": "test.handlebars"
+        },
+        {
+            "type": "integer", 
+            "name": "age", 
+            "param": null, 
+            "label": {
+                "en_us": "Enter your age:"
+            }
+        }, 
+        {
+            "type": "number", 
+            "name": "bmi", 
+            "param": null, 
+            "label": {
+                "en_us": "Enter your bmi:"
+            }
+        }, 
+        {
+            "type": "select", 
+            "name": "sel",
+            "label": "Select all genders:",
+            "param": "gender"
+        },
+        {
+            "type": "goto",
+            "param": "formend"
+        },
+        {
+            "type": "label", 
+            "param": "repeater"
+        },
+        {
+			"name": "rgp",
+            "qp": {
+                "param": "foo"
+            }, 
+            "type": "repeat", 
+            "param": "subform.html"
+        }, 
+        {
+            "type": "label", 
+            "param": "formend"
+        }
+    ], 
+    "model": {
+        "acknowledgeTest": {
+            "type": "string"
+        },
+        "name": {
+            "type": "string"
+        }, 
+        "specialTemplateTest": {
+            "type": "string"
+        }, 
+        "age": {
+            "type": "integer"
+        }, 
+        "bmi": {
+            "type": "number"
+        }, 
+        "sel": {
+            "type": "multiselect"
+        }, 
+        "image_test": {
+            "type": "image/*"
+        }, 
+        "audio_test": {
+            "type": "audio/*"
+        }, 
+        "video_test": {
+            "type": "video/*"
+        }
+    }, 
+    "choices": {
+        "gender": [
+            {
+                "name": "male", 
+                "label": "male"
+            }, 
+            {
+                "name": "female", 
+                "label": "female"
+            }
+        ]
+    }
+}

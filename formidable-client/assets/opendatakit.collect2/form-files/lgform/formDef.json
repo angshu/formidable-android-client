@@ -1,0 +1,79 @@
+{
+    "settings": [
+        {
+            "setting": "formId",
+            "value": "lgform"
+        },
+        {
+            "setting": "formVersion"
+        },
+        {
+            "setting": "formTitle",
+            "value": {
+                "en_us": "Short Test Form"
+                }
+        },
+        {
+            "setting": "formLogo",
+            "value": "img/form_logo.png"
+        }
+    ],
+    "survey": [
+        {
+            "prompts": [
+                {
+                    "type": "integer", 
+                    "name": "age", 
+                    "param": null, 
+                    "label": {
+                        "en_us": "Enter your age:"
+                    }
+                }, 
+                {
+                    "type": "number", 
+                    "name": "bmi", 
+                    "param": null, 
+                    "label": {
+                        "en_us": "Enter your bmi:"
+                    }
+                },
+                {
+                    "type": "select_one", 
+                    "name": "gender", 
+                    "param": "gender", 
+                    "label": {
+                        "en_us": "Enter your gender:"
+                    }
+                }
+            ], 
+            "type": "screen", 
+            "name": "testScreen",
+            "label":  {
+                "en_us": "Screen Group"
+            }
+        }
+    ], 
+    "model": {
+        "age": {
+            "type": "integer"
+        }, 
+        "bmi": {
+            "type": "number"
+        }, 
+        "gender": {
+            "type": "string"
+        }
+    }, 
+    "choices": {
+        "gender": [
+            {
+                "name": "male", 
+                "label": "male"
+            }, 
+            {
+                "name": "female", 
+                "label": "female"
+            }
+        ]
+    }
+}

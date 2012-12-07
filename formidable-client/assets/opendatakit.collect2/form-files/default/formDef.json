@@ -1,0 +1,38 @@
+{
+    "settings": [
+        {
+            "setting": "tableId",
+            "value": "default01"
+        },
+        {
+            "setting": "formId",
+            "value": "default"
+        },
+        {
+            "setting": "formVersion"
+        },
+        {
+            "setting": "formLocales",
+            "value": ["en_us"]
+        },
+        {
+            "setting": "formTitle",
+            "value": {
+                "en_us": "Default form"
+            }
+        }
+    ],
+    "survey": [
+        {
+            "type": "note", 
+            "label": {
+                "en_us": "This is the default form."
+            },
+            "hint": "Set your url hash to #formPath=[relative path to form directory]/ to change forms."
+        }
+    ], 
+    "model": {
+    }, 
+    "choices": {
+    }
+}

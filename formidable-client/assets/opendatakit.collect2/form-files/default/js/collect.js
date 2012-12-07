@@ -16,7 +16,7 @@ window.collect = window.collect || {
     getDatabaseSettings: function() {
         // version identifies the database schema that the database layer should use.
         // maxSize is in bytes
-        return '{"shortName":"odk","version":"1","displayName":"ODK Instances Database","maxSize":65536}';
+        return '{"shortName":"webview","version":"1.0","displayName":"ODK Instances Database","maxSize":65536}';
     },
     setInstanceId: function(instanceId) {
         // report the new instanceId to ODK Collect...

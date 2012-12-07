@@ -53,7 +53,7 @@ public class FormidableActivity extends Activity {
 		System.out.println(String.format("Name: %s %s", record.get("name"), record.get("surname")));
         
         WebView view = initView();
-        view.loadUrl(formateUrl("webapp/default/index.html"));
+        view.loadUrl(formateUrl("opendatakit.collect2/form-files/default/index.html"));
         search(eventSource, "name:vivek AND surname:singh");
     }
 	

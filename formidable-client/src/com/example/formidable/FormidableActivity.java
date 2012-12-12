@@ -53,7 +53,9 @@ public class FormidableActivity extends Activity {
 		System.out.println(String.format("Name: %s %s", record.get("name"), record.get("surname")));
         
         WebView view = initView();
-        view.loadUrl(formateUrl("opendatakit.collect2/form-files/default/index.html"));
+        //view.loadUrl(formateUrl("opendatakit.collect2/form-files/default/index.html"));
+        //view.loadUrl(formateUrl("webapp/default/index.html#formPath=../IMNCI/&pageRef=1"));
+        view.loadUrl(formateUrl("webapp/default/index.html#formPath=../example/&pageRef=1"));
         search(eventSource, "name:vivek AND surname:singh");
     }
 	
@@ -97,7 +99,7 @@ public class FormidableActivity extends Activity {
         settings.setGeolocationEnabled(true);
         settings.setAllowFileAccess(true);
         
-        browser.addJavascriptInterface(new JSRepoHandler(eventSource.getRepository()), "_eventRepo");
+        browser.addJavascriptInterface(new OdkCollectJSInterface(eventSource.getRepository()), "extRepo");
         //browser.loadUrl("http://"+getLocalIpAddress()+":"+PORT);
         //browser.loadUrl("http://enketo.org/launch?server=http%3A%2F%2Fformhub.org%2Fwho_forms");
         return browser;
@@ -169,40 +171,77 @@ public class FormidableActivity extends Activity {
 	}
     
     
-    public class JSRepoHandler {
+    public class OdkCollectJSInterface {
     		private RecordRepository repository;
 
-		public JSRepoHandler(RecordRepository repository) {
+		public OdkCollectJSInterface(RecordRepository repository) {
 			this.repository = repository;
     		}
 		
-		public void addEvent(String eventProps) {
-			//System.out.println("***** eventProps = " + eventProps);
+		public void addEvent(String event) {
 			try {
-				JSONObject json = new JSONObject(eventProps);
-				String epoch = json.optString("epoch");
-				String recordId = json.optString("recordId");
-				if (!validStr(epoch)) {
-					epoch = "1";
-				}
-				if (!validStr(recordId)) {
-					recordId = newId();
+				JSONObject eventJson = new JSONObject(event);
+				
+				String formId = eventJson.optString("formId");
+				String currentInstanceId = eventJson.optString("currentInstanceId");
+				boolean isComplete = eventJson.optBoolean("asComplete");
+				
+				System.out.println(String.format("Collect form submission of formId: %s, instanceId: %s, final:%b", formId, currentInstanceId, isComplete));
+				
+				JSONObject modelJson = eventJson.optJSONObject("model");
+				JSONObject dataJson = eventJson.optJSONObject("data");
+				JSONObject metadataJson = eventJson.optJSONObject("metadata");
+				JSONArray modelNames = modelJson.names();
+				
+				//merge the model and data 
+				for (int i=0; i<modelNames.length(); i++) {
+					String fieldName = (String) modelNames.get(i);
+					JSONObject modelField = modelJson.getJSONObject(fieldName);
+					
+					JSONObject dataField = dataJson.optJSONObject(fieldName);
+					if (dataField != null) {
+						//we can get actual typed values if required
+						String fieldValue = dataField.optString("value"); 
+						modelField.put("value", fieldValue);
+					}
 				}
 				
-				Event event = new Event(Integer.valueOf(epoch), recordId);
 				
-				JSONObject data = json.getJSONObject("data");
-				JSONArray names = data.names();
-				for (int i=0; i<names.length(); i++) {
-					String key = (String) names.get(i);
-					String value = (String) data.get(key);
-					event.addAttribute(key, value);
-					//System.out.println(String.format("%s = %s", key, value));
+				for (int i=0; i<modelNames.length(); i++) {
+					String fieldName = (String) modelNames.get(i);
+					JSONObject modelField = modelJson.getJSONObject(fieldName);
+					System.out.println(String.format("****** field %s = %s", fieldName, modelField));
 				}
-				repository.put(event);
+				
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+			
+//			try {
+//				JSONObject json = new JSONObject(eventProps);
+//				String epoch = json.optString("epoch");
+//				String recordId = json.optString("recordId");
+//				if (!validStr(epoch)) {
+//					epoch = "1";
+//				}
+//				if (!validStr(recordId)) {
+//					recordId = newId();
+//				}
+//				
+//				Event event = new Event(Integer.valueOf(epoch), recordId);
+//				
+//				JSONObject data = json.getJSONObject("data");
+//				JSONArray names = data.names();
+//				for (int i=0; i<names.length(); i++) {
+//					String key = (String) names.get(i);
+//					String value = (String) data.get(key);
+//					event.addAttribute(key, value);
+//					//System.out.println(String.format("%s = %s", key, value));
+//				}
+//				repository.put(event);
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
 		}		
 		
     }

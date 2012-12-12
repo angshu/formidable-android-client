@@ -425,13 +425,29 @@ window.controller = {
                     that.validateAllQuestions($.extend({},ctxt,{
                         success:function(){
                             database.save_all_changes($.extend({},ctxt,{success:function() {
-                                collect.saveAllChangesCompleted( database.getTableMetaDataValue('formId'), opendatakit.getCurrentInstanceId(), true);
+                                    collect.saveAllChangesCompleted( database.getTableMetaDataValue('formId'), opendatakit.getCurrentInstanceId(), true);
+                                    collect.notifyListeners({   
+                                            'formId' : database.getTableMetaDataValue('formId'), 
+                                            'currentInstanceId': opendatakit.getCurrentInstanceId(),
+                                            'model' : database.mdl.model,
+                                            'data' : database.mdl.data,
+                                            'metadata' : database.mdl.metadata,
+                                            'asComplete' : true 
+                                    });
                                 }}), true);
                         }}));
                 }}), false);
         } else {
             database.save_all_changes($.extend({},ctxt,{success:function() {
-                            collect.saveAllChangesCompleted( database.getTableMetaDataValue('formId'), opendatakit.getCurrentInstanceId(), false);
+                                    collect.saveAllChangesCompleted( database.getTableMetaDataValue('formId'), opendatakit.getCurrentInstanceId(), false);
+                                    collect.notifyListeners({   
+                                        'formId' : database.getTableMetaDataValue('formId'), 
+                                        'currentInstanceId': opendatakit.getCurrentInstanceId(),
+                                        'model' : database.mdl.model,
+                                        'data' : database.mdl.data,
+                                        'metadata' : database.mdl.metadata,
+                                        'asComplete' : false 
+                                    } );
                             }}), false);
         }
     },

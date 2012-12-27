@@ -30,7 +30,8 @@ requirejs.config({
         // collect.js -- stub directly loaded
         // functionality
         prompts : 'js/prompts',
-        database : 'js/database',
+        dbImpl   : 'js/databaseImpl',
+        database : 'js/formidabledb',
         controller : 'js/controller',
         builder : 'js/builder',
         screenManager : 'js/screenManager',

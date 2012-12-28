@@ -1,0 +1,286 @@
+{
+    "model": {
+        "color": {
+            "type": "string"
+        }, 
+        "state": {
+            "type": "string"
+        }, 
+        "region": {
+            "type": "string"
+        }, 
+        "h_select": {
+            "type": "string"
+        }, 
+        "i1": {
+            "type": "string"
+        }, 
+        "country": {
+            "type": "string"
+        }, 
+        "i3": {
+            "type": "string"
+        }, 
+        "i2": {
+            "type": "string"
+        }, 
+        "bird": {
+            "type": "string"
+        }, 
+        "cp_test": {
+            "type": "string"
+        }
+    }, 
+    "queries": [
+        {
+            "callback": "context.query.results ? _.map(context.query.results.place, function(place){\nplace.label = place.name;\nreturn place;\n}) : []", 
+            "_rowNum": 2, 
+            "name": "countries", 
+            "uri": "\"https://query.yahooapis.com/v1/public/yql?format=json&q=\" +  encodeURIComponent(\"select * from geo.countries where place='North America'\")"
+        }, 
+        {
+            "callback": "context.query.results ? _.map(context.query.results.place, function(place){\nplace.label = place.name;\nreturn place;\n}) : []", 
+            "_rowNum": 3, 
+            "name": "states", 
+            "uri": "\"https://query.yahooapis.com/v1/public/yql?format=json&q=\" +  encodeURIComponent(\"select * from geo.states where place='\" + data('country') + \"'\")"
+        }, 
+        {
+            "callback": "_.chain(context).pluck('region').uniq().map(function(region){\nreturn {name:region, label:region};\n}).value()", 
+            "_rowNum": 4, 
+            "name": "regions_csv", 
+            "uri": "\"regions.csv\""
+        }, 
+        {
+            "callback": "_.map(context, function(place){\nplace.name = place.country;\nplace.label = place.country;\nreturn place;\n})", 
+            "_rowNum": 5, 
+            "name": "countries_csv", 
+            "uri": "\"regions.csv\""
+        }, 
+        {
+            "callback": "[context]", 
+            "_rowNum": 6, 
+            "name": "content_provider_test", 
+            "uri": "\"content://org.opendatakit.FileContentProviderExample/\""
+        }
+    ], 
+    "survey": [
+        {
+            "name": "country", 
+            "type": "select_one", 
+            "param": "countries", 
+            "_rowNum": 2, 
+            "comments": "Cascading select using remote data", 
+            "label": "Choose a country:"
+        }, 
+        {
+            "name": "state", 
+            "_rowNum": 3, 
+            "type": "select_one", 
+            "param": "states", 
+            "label": "Choose a state:"
+        }, 
+        {
+            "_rowNum": 4, 
+            "prompts": [
+                {
+                    "appearance": "grid", 
+                    "name": "bird", 
+                    "_rowNum": 5, 
+                    "type": "select_one", 
+                    "param": "birds", 
+                    "label": "Choose a bird:"
+                }, 
+                {
+                    "param": null, 
+                    "_rowNum": 6, 
+                    "type": "note", 
+                    "condition": "selected(data('bird'), 'blackbird')", 
+                    "label": "Blackbird selected"
+                }, 
+                {
+                    "param": null, 
+                    "_rowNum": 7, 
+                    "type": "note", 
+                    "condition": "selected(data('bird'), 'blackbird') && now().getHours() < 2", 
+                    "label": "in the dead of night"
+                }
+            ], 
+            "type": "screen", 
+            "comments": "Image based select"
+        }, 
+        {
+            "type": "screen", 
+            "prompts": [
+                {
+                    "appearance": "inline", 
+                    "name": "i1", 
+                    "_rowNum": 10, 
+                    "type": "select_one", 
+                    "param": "yes_no", 
+                    "label": "Choose one:"
+                }, 
+                {
+                    "appearance": "inline", 
+                    "name": "i2", 
+                    "_rowNum": 11, 
+                    "type": "select_one", 
+                    "param": "yes_no", 
+                    "label": "Choose one:"
+                }, 
+                {
+                    "appearance": "inline", 
+                    "name": "i3", 
+                    "_rowNum": 12, 
+                    "type": "select_one", 
+                    "param": "yes_no", 
+                    "label": "Choose one:"
+                }
+            ], 
+            "_rowNum": 9
+        }, 
+        {
+            "name": "color", 
+            "_rowNum": 14, 
+            "type": "select_one_with_other", 
+            "param": "colors", 
+            "label": "What is your favorite color?"
+        }, 
+        {
+            "condition": "selected(data('color'), 'teal')", 
+            "type": "note", 
+            "param": null, 
+            "_rowNum": 15, 
+            "comments": "selected function with arguement not included in choices.", 
+            "label": "Teal is a good choice."
+        }, 
+        {
+            "name": "h_select", 
+            "inputAttributes": {
+                "data-type": "horizontal"
+            }, 
+            "_rowNum": 16, 
+            "type": "select_one", 
+            "param": "yes_no", 
+            "label": "Horizontal select example."
+        }, 
+        {
+            "name": "region", 
+            "_rowNum": 17, 
+            "type": "select_one", 
+            "param": "regions_csv", 
+            "label": "Choose a region:"
+        }, 
+        {
+            "name": "country", 
+            "choice_filter": "context.region === data('region')", 
+            "appearance": "dropdown", 
+            "_rowNum": 18, 
+            "param": "countries_csv", 
+            "label": "Choose a country:", 
+            "type": "select_one"
+        }, 
+        {
+            "name": "cp_test", 
+            "hint": "You will need to install a content provider app for the query to work. There is an example app available here: https://github.com/nathanathan/FileContentProviderExample", 
+            "_rowNum": 19, 
+            "type": "select_one", 
+            "param": "content_provider_test", 
+            "label": "This demos a content provider query."
+        }
+    ], 
+    "settings": [
+        {
+            "setting": "form_id", 
+            "_rowNum": 2, 
+            "value": "selects"
+        }, 
+        {
+            "setting": "form_version", 
+            "_rowNum": 3, 
+            "value": 1
+        }, 
+        {
+            "setting": "form_title", 
+            "_rowNum": 4, 
+            "value": "Select Examples"
+        }
+    ], 
+    "choices": {
+        "colors": [
+            {
+                "_rowNum": 15, 
+                "name": "red", 
+                "label": "Red"
+            }, 
+            {
+                "_rowNum": 16, 
+                "name": "green", 
+                "label": "Green"
+            }, 
+            {
+                "_rowNum": 17, 
+                "name": "blue", 
+                "label": "Blue"
+            }
+        ], 
+        "birds": [
+            {
+                "image": "media/blackbird.png", 
+                "_rowNum": 2, 
+                "name": "blackbird"
+            }, 
+            {
+                "image": "media/bluethroat.png", 
+                "_rowNum": 3, 
+                "name": "bluethroat"
+            }, 
+            {
+                "image": "media/crow.png", 
+                "_rowNum": 4, 
+                "name": "crow"
+            }, 
+            {
+                "image": "media/eagle.png", 
+                "_rowNum": 5, 
+                "name": "eagle"
+            }, 
+            {
+                "image": "media/egret.png", 
+                "_rowNum": 6, 
+                "name": "egret"
+            }, 
+            {
+                "image": "media/goose.png", 
+                "_rowNum": 7, 
+                "name": "goose"
+            }, 
+            {
+                "image": "media/gull.png", 
+                "_rowNum": 8, 
+                "name": "gull"
+            }, 
+            {
+                "image": "media/hawfinch.png", 
+                "_rowNum": 9, 
+                "name": "hawfinch"
+            }, 
+            {
+                "image": "media/jay.png", 
+                "_rowNum": 10, 
+                "name": "jay"
+            }
+        ], 
+        "yes_no": [
+            {
+                "_rowNum": 12, 
+                "name": "yes", 
+                "label": "Yes"
+            }, 
+            {
+                "_rowNum": 13, 
+                "name": "no", 
+                "label": "No"
+            }
+        ]
+    }
+}

@@ -10,7 +10,7 @@
  * interpretation of the formDef.json for the form).
  */
 requirejs.config({
-    baseUrl: collect.getBaseUrl(),
+    baseUrl: shim.getBaseUrl(),
     paths: {
         // third-party libraries we depend upon 
         jqmobile : 'libs/jquery.mobile-1.2.0/jquery.mobile-1.2.0',
@@ -27,11 +27,11 @@ requirejs.config({
         // top-level objects
         mdl : 'js/mdl',
         promptTypes : 'js/promptTypes',
-        // collect.js -- stub directly loaded
+        // shim.js -- stub directly loaded
         // functionality
         prompts : 'js/prompts',
-        dbImpl   : 'js/databaseImpl',
-        database : 'js/formidabledb',
+        dbImpl  : 'js/defaultDbImpl', 
+        database : 'js/db',
         controller : 'js/controller',
         builder : 'js/builder',
         screenManager : 'js/screenManager',
@@ -39,7 +39,8 @@ requirejs.config({
         opendatakit : 'js/opendatakit',
         jqmConfig : 'js/jqmConfig',
         handlebarsHelpers : 'js/handlebarsHelpers',
-        formulaFunctions : 'js/formulaFunctions'
+        formulaFunctions : 'js/formulaFunctions',
+        'jquery-csv' : 'libs/jquery-csv/src/jquery.csv'
     },
     shim: {
         'jquery': {
@@ -83,6 +84,9 @@ requirejs.config({
         },
         'mobiscroll': {
             deps: ['jquery']
+        },
+        'jquery-csv' : {
+            deps: ['jquery']
         }
     }
 });
@@ -107,7 +111,15 @@ requirejs(['jquery', 'mdl','opendatakit', 'database','parsequery',
             // the requested form.
             var f = function() {
                 if ( $.mobile != null && !$.mobile.hashListeningEnabled ) {
-                    parsequery.parseParameters(ctxt);
+                    
+                    if ( window.location.search != null && window.location.search.indexOf("purge") >= 0 ) {
+                        ctxt.append('purging datastore');
+                        database.purge($.extend({},ctxt,{success:function() {
+                                parsequery.parseParameters(ctxt);
+                            }}));
+                    } else {
+                        parsequery.parseParameters(ctxt);
+                    }
                 } else {
                     ctxt.append('startup.delay');
                     setTimeout(f, 200);

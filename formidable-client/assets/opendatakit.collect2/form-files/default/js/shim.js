@@ -18,7 +18,7 @@ window.shim = window.shim || {
     getDatabaseSettings: function() {
         // version identifies the database schema that the database layer should use.
         // maxSize is in bytes
-        return '{"shortName":"odk","version":"1","displayName":"ODK Instances Database","maxSize":65536}';
+        return '{"shortName":"webview","version":"1","displayName":"ODK Instances Database","maxSize":65536}';
     },
     setInstanceId: function(instanceId) {
         // report the new instanceId to ODK Survey...
@@ -139,5 +139,18 @@ window.shim = window.shim || {
     },
     ignoreAllChangesFailed: function( form_id, instanceId ) {
         alert("notify container FAILED ignore all changes.");
+    },
+    notifyListeners: function(formData) {
+        if (window.extRepo) {
+            console.log(JSON.stringify(formData));
+            window.extRepo.addEvent(JSON.stringify(formData));
+        }
+        // console.log("****** start: model Properties ****** ");
+        // if (formData.model) {
+        //     for (var attr in formData.model) {
+        //         console.log(attr);    
+        //     }
+        // }
+        // console.log("****** end: model Properties ****** ");
     }
 };

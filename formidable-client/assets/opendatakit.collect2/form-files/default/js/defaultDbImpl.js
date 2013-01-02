@@ -192,7 +192,7 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 
 
 		//not classified as private but can't find references from other modules.
-		this.fullDefHelper = function(transaction, ctxt, tableToUpdate, idx, fullDef, dbTableName, dataTableModel, tlo) {
+		this.fullDefHelper = function(transaction, ctxt, tableToUpdate, idx, fullDef, dbTableName, dataTableModel, tlo, mdl) {
 		    var that = this;
 		    var row = null;
 		    
@@ -241,7 +241,7 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 		    var insertCmd = insertStart.substr(0,insertStart.length-1) + insertMiddle.substr(0,insertMiddle.length-1) + ');';
 		    
 		    transaction.executeSql(insertCmd, bindArray, function(transaction, result) {
-		        that.fullDefHelper(transaction, ctxt, tableToUpdate, idx+1, fullDef, dbTableName, dataTableModel, tlo);
+		        that.fullDefHelper(transaction, ctxt, tableToUpdate, idx+1, fullDef, dbTableName, dataTableModel, tlo, mdl);
 		    });
 		};
 
@@ -313,7 +313,7 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 		                        var dbKey = row['key'];
 		                        var dbValue = row['value'];
 		                        var dbType = row['type'];
-		                        defn = that._getAccessibleColumnKeyDefinition(dbKey);
+		                        defn = _getAccessibleColumnKeyDefinition(dbKey);
 		                        if ( defn != null ) {
 		                            _reconstructElementPath(defn.elementPath, defn, dbValue, tlo.columnMetadata[elementKey] );
 		                        }
@@ -627,7 +627,7 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 		        var createTableCmd = _createTableStmt(dbTableName, dataTableModel);
 		        ctxt.sqlStatement = createTableCmd;
 		        transaction.executeSql(createTableCmd.stmt, createTableCmd.bind, function(transaction, result) {
-		            that.fullDefHelper(transaction, ctxt, tableToUpdate, 0, fullDef, dbTableName, dataTableModel, tlo);
+		            that.fullDefHelper(transaction, ctxt, tableToUpdate, 0, fullDef, dbTableName, dataTableModel, tlo, mdl);
 		        });
 		    } else {
 		        // we don't need to write the database -- just update everything
@@ -699,7 +699,7 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 		    i = 0;
 		    while ( dbKeyMap[elementKey] != null ) {
 		        elementKey = elementKey.substr(0,60);
-		        elementKey = elementKey + this._padWithLeadingZeros(i,4);
+		        elementKey = elementKey + _padWithLeadingZeros(i,4);
 		        ++i;
 		    }
 		    // remember the elementKey we have chosen...
@@ -709,7 +709,7 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 		    // handle the recursive structures...
 		    if ( jsonType.type == 'array' ) {
 		        // explode with subordinate elements
-		        f = this._flattenElementPath( dbKeyMap, elementPathPrefix, 'items', elementKey, jsonType.items );
+		        f = _flattenElementPath( dbKeyMap, elementPathPrefix, 'items', elementKey, jsonType.items );
 		        jsonType.listChildElementKeys = [ f.elementKey ];
 		        jsonType.isPersisted = true;
 		    } else if ( jsonType.type == 'object' ) {
@@ -720,7 +720,7 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 		        var listChildElementKeys = [];
 		        for ( e in jsonType.properties ) {
 		            hasProperties = true;
-		            f = this._flattenElementPath( dbKeyMap, elementPathPrefix, e, elementKey, jsonType.properties[e] );
+		            f = _flattenElementPath( dbKeyMap, elementPathPrefix, e, elementKey, jsonType.properties[e] );
 		            listChildElementKeys.push(f.elementKey);
 		        }
 		        jsonType.listChildElementKeys = listChildElementKeys;
@@ -732,7 +732,7 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 		    if ( jsonType.isPersisted && (jsonType.listChildElementKeys != null)) {
 		        // we have some sort of structure that is persisting
 		        // clear the isPersisted tags on the nested elements
-		        this._clearPersistedFlag(dbKeyMap, jsonType.listChildElementKeys);
+		        _clearPersistedFlag(dbKeyMap, jsonType.listChildElementKeys);
 		    }
 		    return jsonType;
 		}
@@ -804,9 +804,9 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 		            var jsonType = dbKeyMap[f];
 		            jsonType.isPersisted = false;
 		            if ( jsonType.type == 'array' ) {
-		                this._clearPersistedFlag(dbKeyMap, jsonType.listChildElementKeys);
+		                _clearPersistedFlag(dbKeyMap, jsonType.listChildElementKeys);
 		            } else if ( jsonType.type == 'object' ) {
-		                this._clearPersistedFlag(dbKeyMap, jsonType.listChildElementKeys);
+		                _clearPersistedFlag(dbKeyMap, jsonType.listChildElementKeys);
 		            }
 		        }
 		    }

@@ -216,6 +216,10 @@ return {
     
     getFormLocalesValue:function() {
         return this.getFormLocales(this.getCurrentFormDef());
+    },
+
+    getMdl:function() {
+        return mdl;
     }
 };
 });

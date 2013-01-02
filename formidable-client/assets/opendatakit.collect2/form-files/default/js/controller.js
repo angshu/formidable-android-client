@@ -502,6 +502,16 @@ window.controller = {
                                 success:function() {
                                     shim.saveAllChangesCompleted( opendatakit.getSettingValue('form_id'), opendatakit.getCurrentInstanceId(), true);
                                     ctxt.success();
+                                    if (shim.notifyListeners) {
+                                        shim.notifyListeners({   
+                                            'form_id' : opendatakit.getSettingValue('form_id'), 
+                                            'currentInstanceId': opendatakit.getCurrentInstanceId(),
+                                            'model' : opendatakit.getMdl().model,
+                                            'data' :  opendatakit.getMdl().data,
+                                            'metadata' : opendatakit.getMdl().metadata,
+                                            'asComplete' : true 
+                                        });
+                                    }
                                 },
                                 failure:function(m) {
                                     shim.saveAllChangesFailed( opendatakit.getSettingValue('form_id'), opendatakit.getCurrentInstanceId(), true);
@@ -514,6 +524,16 @@ window.controller = {
                 success:function() {
                     shim.saveAllChangesCompleted( opendatakit.getSettingValue('form_id'), opendatakit.getCurrentInstanceId(), false);
                     ctxt.success();
+                    if (shim.notifyListeners) {
+                        shim.notifyListeners({   
+                            'form_id' : opendatakit.getSettingValue('form_id'), 
+                            'currentInstanceId': opendatakit.getCurrentInstanceId(),
+                            'model' : opendatakit.getMdl().model,
+                            'data' :  opendatakit.getMdl().data,
+                            'metadata' : opendatakit.getMdl().metadata,
+                            'asComplete' : false 
+                        });
+                    }
                 }}), false);
         }
     },

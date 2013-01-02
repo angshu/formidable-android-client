@@ -55,7 +55,7 @@ public class FormidableActivity extends Activity {
         WebView view = initView();
         //view.loadUrl(formateUrl("opendatakit.collect2/form-files/default/index.html"));
         //view.loadUrl(formateUrl("webapp/default/index.html#formPath=../IMNCI/&pageRef=1"));
-        view.loadUrl(formateUrl("webapp/default/index.html#formPath=../example/&pageRef=1"));
+        view.loadUrl(formateUrl("opendatakit.collect2/form-files/default/index.html#formPath=../example/&pageRef=1"));
         search(eventSource, "name:vivek AND surname:singh");
     }
 	

@@ -506,7 +506,7 @@ window.controller = {
                                         shim.notifyListeners({   
                                             'form_id' : opendatakit.getSettingValue('form_id'), 
                                             'currentInstanceId': opendatakit.getCurrentInstanceId(),
-                                            'model' : opendatakit.getMdl().model,
+                                            'model' : opendatakit.getCurrentFormDef().model,
                                             'data' :  opendatakit.getMdl().data,
                                             'metadata' : opendatakit.getMdl().metadata,
                                             'asComplete' : true 
@@ -528,7 +528,7 @@ window.controller = {
                         shim.notifyListeners({   
                             'form_id' : opendatakit.getSettingValue('form_id'), 
                             'currentInstanceId': opendatakit.getCurrentInstanceId(),
-                            'model' : opendatakit.getMdl().model,
+                            'model' : opendatakit.getCurrentFormDef().model,
                             'data' :  opendatakit.getMdl().data,
                             'metadata' : opendatakit.getMdl().metadata,
                             'asComplete' : false 

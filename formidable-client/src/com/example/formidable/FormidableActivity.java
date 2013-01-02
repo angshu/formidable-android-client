@@ -182,7 +182,7 @@ public class FormidableActivity extends Activity {
 			try {
 				JSONObject eventJson = new JSONObject(event);
 				
-				String formId = eventJson.optString("formId");
+				String formId = eventJson.optString("form_id");
 				String currentInstanceId = eventJson.optString("currentInstanceId");
 				boolean isComplete = eventJson.optBoolean("asComplete");
 				
@@ -191,26 +191,25 @@ public class FormidableActivity extends Activity {
 				JSONObject modelJson = eventJson.optJSONObject("model");
 				JSONObject dataJson = eventJson.optJSONObject("data");
 				JSONObject metadataJson = eventJson.optJSONObject("metadata");
-				JSONArray modelNames = modelJson.names();
 				
+				JSONArray attributeNames = modelJson.names();
 				//merge the model and data 
-				for (int i=0; i<modelNames.length(); i++) {
-					String fieldName = (String) modelNames.get(i);
-					JSONObject modelField = modelJson.getJSONObject(fieldName);
+				for (int i=0; i< attributeNames.length(); i++) {
+					String attrName = (String) attributeNames.get(i);
+					JSONObject attribute = modelJson.getJSONObject(attrName);
 					
-					JSONObject dataField = dataJson.optJSONObject(fieldName);
-					if (dataField != null) {
+					Object attrData = dataJson.opt(attrName);
+					if (attrData != null) {
 						//we can get actual typed values if required
-						String fieldValue = dataField.optString("value"); 
-						modelField.put("value", fieldValue);
+						attribute.put("value", attrData);
 					}
 				}
 				
 				
-				for (int i=0; i<modelNames.length(); i++) {
-					String fieldName = (String) modelNames.get(i);
-					JSONObject modelField = modelJson.getJSONObject(fieldName);
-					System.out.println(String.format("****** field %s = %s", fieldName, modelField));
+				for (int i=0; i<attributeNames.length(); i++) {
+					String attrName = (String) attributeNames.get(i);
+					JSONObject attribute = modelJson.getJSONObject(attrName);
+					System.out.println(String.format("****** field %s = %s", attrName, attribute));
 				}
 				
 			} catch (Exception e) {

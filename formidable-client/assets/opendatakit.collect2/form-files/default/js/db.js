@@ -164,6 +164,21 @@ define(['mdl','opendatakit','jquery', 'dbImpl'], function(mdl,opendatakit,$, dbI
 		                ctxt.success();
 		            }});
 		      dbImpl.saveAllChanges(tmpctxt, opendatakit.getCurrentInstanceId(), asComplete, mdl);
+		},
+		setData:function(ctxt, name, value) {
+		    ctxt.append('setData: ' + name);
+		    var that = this;
+		    that.putData($.extend({}, ctxt, {success: function() {
+		            that.cacheAllData(ctxt, opendatakit.getCurrentInstanceId());
+		        }}), name, value);
+		},
+		//private method?
+		putData:function(ctxt, name, value) {
+		      var that = this;
+		      var kvMap = {};
+		      ctxt.append('putData', 'name: ' + name);
+		      kvMap[name] = {value: value, isInstanceMetadata: false };
+		      that.putDataKeyValueMap(ctxt, kvMap );
 		}
     }
 });

@@ -1,33 +1,363 @@
 'use strict';
-// TODO: Instance level: locale (used), at Table level: locales (available), formPath, formId, formVersion, 
-// depends upon: opendatakit 
+// TODO: Instance level: locale (used), at Table level: locales (available), formPath, 
 define(['mdl','opendatakit','jquery'], function(mdl,opendatakit,$) {
     return {
   submissionDb:false,
-  dbTableMetadata: [ { key: 'srcPhoneNum', type: 'string', isNullable: true },
-                     { key: 'lastModTime', type: 'string', isNullable: false },
-                     { key: 'syncTag', type: 'string', isNullable: true },
-                     { key: 'syncState', type: 'integer', isNullable: false, defaultValue: 0 },
-                     { key: 'transactioning', type: 'integer', isNullable: false, defaultValue: 1 },
-                     { key: 'timestamp', type: 'integer', isNullable: false },
-                     { key: 'saved', type: 'string', isNullable: true },
-                     { key: 'instanceName', type: 'string', isNullable: false },
-                     { key: 'locale', type: 'string', isNullable: true },
-                     { key: 'instanceArguments', type: 'object', isNullable: true },
-                     { key: 'xmlPublishTimestamp', type: 'integer', isNullable: true },
-                     { key: 'xmlPublishStatus', type: 'string', isNullable: true } ],
-  mdl:mdl,
+        // maps of:
+        //   dbColumnName : { 
+        //        type: databaseType, 
+        //         isNotNullable: false/true, 
+        //        isPersisted: false/true,
+        //      'default': defaultValue,
+        //      elementPath: exposedName }
+        // 
+        // elementPath is the inversion of the property name and model's value name.
+        // if elementPath is null, then the entry is not exposed above the database layer.
+        // i.e., it is not settable/gettable via Javascript used in prompts.
+        // This is used for bookkeeping columns (e.g., server sync, save status).
+        //
+  dataTablePredefinedColumns: { id: {type: 'string', isNotNullable: true, isPersisted: true, dbColumnConstraint: 'PRIMARY KEY', elementSet: 'instanceMetadata' },
+                     uri_user: { type: 'string', isNotNullable: false, isPersisted: true, elementSet: 'instanceMetadata' },
+                     last_mod_time: { type: 'integer', isNotNullable: true, 'default': -1, isPersisted: true, elementSet: 'instanceMetadata' },
+                     sync_tag: { type: 'string', isNotNullable: false, isPersisted: true, elementSet: 'instanceMetadata' },
+                     sync_state: { type: 'integer', isNotNullable: true, 'default': 0, isPersisted: true, elementSet: 'instanceMetadata' },
+                     transactioning: { type: 'integer', isNotNullable: true, 'default': 1, isPersisted: true, elementSet: 'instanceMetadata' },
+                     timestamp: { type: 'integer', isNotNullable: true, isPersisted: true, elementSet: 'instanceMetadata' },
+                     saved: { type: 'string', isNotNullable: false, isPersisted: true, elementSet: 'instanceMetadata' },
+                     instance_name: { type: 'string', isNotNullable: true, isPersisted: true, elementPath: 'instanceName', elementSet: 'instanceMetadata' },
+                     locale: { type: 'string', isNotNullable: false, isPersisted: true, elementPath: 'locale', elementSet: 'instanceMetadata' } },
+  tableDefinitionsPredefinedColumns: {
+                    table_id: { type: 'string', isNotNullable: true, isPersisted: true, dbColumnConstraint: 'PRIMARY KEY', elementPath: 'table_id', elementSet: 'tableMetadata' },
+                    table_key: { type: 'string', isNotNullable: true, isPersisted: true, dbColumnConstraint: 'UNIQUE', elementPath: 'tableKey', elementSet: 'tableMetadata' },
+                    db_table_name: { type: 'string', isNotNullable: true, isPersisted: true, dbColumnConstraint: 'UNIQUE', elementPath: 'dbTableName', elementSet: 'tableMetadata' },
+                    type: { type: 'string', isNotNullable: true, isPersisted: true, elementSet: 'tableMetadata' },
+                    table_id_access_controls: { type: 'string', isNotNullable: false, isPersisted: true, elementSet: 'tableMetadata' },
+                    sync_tag: { type: 'string', isNotNullable: false, isPersisted: true, elementSet: 'tableMetadata' },
+                    last_sync_time: { type: 'integer', isNotNullable: true, isPersisted: true, elementSet: 'tableMetadata' },
+                    sync_state: { type: 'string', isNotNullable: true, isPersisted: true, elementSet: 'tableMetadata' },
+                    transactioning: { type: 'integer', isNotNullable: true, isPersisted: true, elementSet: 'tableMetadata' } },
+  columnDefinitionsTableConstraint: 'PRIMARY KEY ( "table_id", "element_key" )',
+  columnDefinitionsPredefinedColumns: {
+                    table_id: { type: 'string', isNotNullable: true, isPersisted: true, elementPath: 'table_id', elementSet: 'columnMetadata' },
+                    element_key: { type: 'string', isNotNullable: true, isPersisted: true, elementPath: 'elementKey', elementSet: 'columnMetadata' },
+                    element_name: { type: 'string', isNotNullable: true, isPersisted: true, elementPath: 'elementName', elementSet: 'columnMetadata' },
+                    element_type: { type: 'string', isNotNullable: false, isPersisted: true, elementSet: 'columnMetadata' },
+                    list_child_element_keys: { type: 'array', items: { type: 'string' }, isNotNullable: false, isPersisted: true, elementSet: 'columnMetadata' },
+                    is_persisted: { type: 'integer', isNotNullable: true, isPersisted: true, elementSet: 'columnMetadata' },
+                    joins: { type: 'array', items: {
+                                type: 'object', 
+                                listChildElementKeys: [],
+                                properties: {
+                                    "table_id": { type: "string", isNotNullable: false, isPersisted: false, elementKey: 'table_id', elementSet: 'columnMetadata' },
+                                    "element_key": { type: "string", isNotNullable: false, isPersisted: false, elementKey: 'elementKey', elementSet: 'columnMetadata' } } },
+                            isNotNullable: false, isPersisted: true, elementPath: 'joins', elementSet: 'columnMetadata' } },
+  // key value stores are fairly straightforward...
+  keyValueStoreActiveTableConstraint: 'PRIMARY KEY ("table_id", "partition", "aspect", "key")',
+  keyValueStoreActivePredefinedColumns: {
+                    table_id: { type: 'string', isNotNullable: true, isPersisted: true },
+                    partition: { type: 'string', isNotNullable: true, isPersisted: true },
+                    aspect: { type: 'string', isNotNullable: true, isPersisted: true },
+                    key: { type: 'string', isNotNullable: true, isPersisted: true },
+                    type: { type: 'string', isNotNullable: false, isPersisted: true },
+                    value: { type: 'string', isNotNullable: false, isPersisted: true } },
+   _tableKeyValueStoreActiveAccessibleKeys: {
+            // keys we are allowing the user to access from within Javascript
+            // partition: table
+            // aspect: global
+            // mapped as psuedo-columns per PredefinedColumns objects, above.
+            // propertyName is the value of the 'key' in the database.
+    },
+   _columnKeyValueStoreActiveAccessibleKeys: {
+            // keys we are allowing the user to access from within Javascript
+            // partition: column
+            // aspect: element_key
+            // mapped as psuedo-columns per PredefinedColumns objects, above.
+            // propertyName is the value of the 'key' in the database.
+     },
+    _getAccessibleTableKeyDefinition: function( key ) {
+        return this._tableKeyValueStoreActiveAccessibleKeys[key];
+    },
+    _getAccessibleColumnKeyDefinition: function( key ) {
+        return this._columnKeyValueStoreActiveAccessibleKeys[key];
+    },
+    _createTableStmt: function( dbTableName, kvMap, tableConstraint ) {
+        // TODO: verify that dbTableName is not already in use...
+        var createTableCmd = 'CREATE TABLE IF NOT EXISTS "' + dbTableName + '"(';
+        var comma = '';
+        for ( var dbColumnName in kvMap ) {
+            var f = kvMap[dbColumnName];
+            if ( f.isPersisted ) {
+                createTableCmd += comma + dbColumnName + " ";
+                comma = ',';
+                if ( f.type == "string" ) {
+                    createTableCmd += "TEXT" + (f.isNotNullable ? " NOT NULL" : " NULL");
+                } else if ( f.type == "integer" ) {
+                    createTableCmd += "INTEGER" + (f.isNotNullable ? " NOT NULL" : " NULL");
+                } else if ( f.type == "number" ) {
+                    createTableCmd += "REAL" + (f.isNotNullable ? " NOT NULL" : " NULL");
+                } else if ( f.type == "boolean" ) {
+                    createTableCmd += "INTEGER" + (f.isNotNullable ? " NOT NULL" : " NULL");
+                } else if ( f.type == "object" ) {
+                    createTableCmd += "TEXT" + (f.isNotNullable ? " NOT NULL" : " NULL");
+                } else if ( f.type == "array" ) {
+                    createTableCmd += "TEXT" + (f.isNotNullable ? " NOT NULL" : " NULL");
+                } else {
+                    throw new Error("unhandled type: " + f.type);
+                }
+            }
+        }
+        if ( tableConstraint != null ) {
+            createTableCmd += comma + tableConstraint + " ";
+        }
+        createTableCmd += ');';
+        return  {
+            stmt : createTableCmd,
+            bind : []
+        };
+    },
+    _dropTableStmt: function(dbTableName) {
+        return { stmt: 'drop table if exists "' + dbTableName + '"',
+                bind: [] 
+            };
+    },
+    _deleteEntireTableContentsTableStmt: function(dbTableName) {
+        return { stmt: 'delete from "' + dbTableName + '"',
+                bind: []
+            };
+    },
+    _fromDatabaseToElementType: function( jsonType, value ) {
+        var that = this;
+        // date conversion elements...
+        var yyyy, mm, dd, hh, min, sec, msec, zsign, zhh, zmm;
+
+        if ( value == null ) {
+            if ( jsonType.isNotNullable ) {
+                throw new Error("unexpected null value for non-nullable field");
+            }
+            return null;
+        }
+        
+        if ( jsonType.type == 'array' ) {
+            value = JSON.parse(value);
+            // TODO: ensure object spec conformance on read?
+            return value;
+        } else if ( jsonType.type == 'object' ) {
+            if ( jsonType.elementType == 'date' ||
+                 jsonType.elementType == 'dateTime' ) {
+                // convert an iso8601 date yyyymmddTHH:MM:SS.ssszzzzz 
+                // to a Date object...
+                // TODO: FIX FRAGILE: loss of timezone info
+                yyyy = Number(value.substr(0,4));
+                mm = Number(value.substr(4,2))-1;// months are 0-11
+                dd = Number(value.substr(6,2));
+                hh = Number(value.substr(9,2));
+                min = Number(value.substr(12,2));
+                sec = Number(value.substr(15,2));
+                msec = Number(value.substr(18,3));
+                zsign = value.substr(21,1);
+                zhh = Number(value.substr(22,2));
+                zmm = Number(value.substr(24,2));
+                value = new Date(Date.UTC(yyyy,mm,dd,hh,min,sec,msec));
+                return value;
+            } else if ( jsonType.elementType == 'time' ) {
+                // convert an iso8601 time HH:MM:SS.ssszzzzz to a Date object...
+                // TODO: FIX FRAGILE: loss of timezone info
+                var idx = value.indexOf(':');
+                hh = Number(value.substring(0,idx));
+                min = Number(value.substr(idx+1,2));
+                sec = Number(value.substr(idx+4,2));
+                msec = Number(value.substr(idx+7,3));
+                value = new Date();
+				value.setHours(hh,min,sec,msec);
+                return value;
+            } else {
+                value = JSON.parse(value);
+                return value;
+            }
+        } else if ( jsonType.type == 'boolean' ) {
+            return Boolean(value); // make it a boolean
+        } else if ( jsonType.type == 'integer' ) {
+            value = Number(value);
+            if ( Math.round(value) != value ) {
+                throw new Error("non-integer value for integer type");
+            }
+            return value;
+        } else if ( jsonType.type == 'number' ) {
+            return Number(value);
+        } else if ( jsonType.type == 'string' ) {
+            return '' + value;
+        } else {
+            throw new Error("unrecognized JSON schema type");
+        }
+    },
+    _padWithLeadingZeros: function( value, places ) {
+        var digits = [];
+        var d, i, s;
+        var sign = (value >= 0);
+        value = Math.abs(value);
+        while ( value != 0 ) {
+            d = (value % 10);
+            digits.push(d);
+            value = Math.floor(value/10);
+        }
+        while ( digits.length < places ) {
+            digits.push(0);
+        }
+        digits.reverse();
+        s = '';
+        for ( i = 0 ; i < digits.length ; ++i ) {
+            d = digits[i];
+            s += d;
+        }
+        return (sign ? '' : '-') + s;
+    },
+    _toDatabaseFromElementType: function( jsonType, value ) {
+        var that = this;
+        var refined;
+        var itemType;
+        var item;
+        var itemValue;
+        // date conversion elements...
+        var yyyy, mm, dd, hh, min, sec, msec, zsign, zhh, zmm;
+
+        if ( value == null ) {
+            if ( jsontype.isNotNullable ) {
+                throw new Error("unexpected null value for non-nullable field");
+            }
+            return null;
+        }
+        
+        if ( jsonType.type == 'array' ) {
+            // ensure that it is an array of the appropriate type...
+            if ( value instanceof Array ) {
+                refined = [];
+                itemType = jsonType.items;
+                if ( itemType == null ) {
+                    value = JSON.stringify(value);
+                } else {
+                    for ( item = 0 ; item < value.length ; ++item ) {
+                        itemValue = that._toDatabaseFromElementType( itemType, value[item] );
+                        refined.push(itemValue);
+                    }
+                    value = JSON.stringify(refined);
+                }
+            } else {
+                throw new Error("unexpected non-array value");
+            }
+            return value;
+        } else if ( jsonType.type == 'object' ) {
+            if ( jsonType.elementType == 'dateTime' ||
+                 jsonType.elementType == 'date' ) {
+
+                yyyy = value.getUTCFullYear();
+                mm = value.getUTCMonth() + 1; // months are 0-11
+                dd = value.getUTCDate();
+                hh = value.getUTCHours();
+                min = value.getUTCMinutes();
+                sec = value.getUTCSeconds();
+                msec = value.getUTCMilliseconds();
+                zsign = 'Z';
+                zhh = '';
+                zmm = '';
+                value = that._padWithLeadingZeros(yyyy,4) + 
+                        that._padWithLeadingZeros(mm,2) +
+                        that._padWithLeadingZeros(dd,2) + 'T' +
+                        that._padWithLeadingZeros(hh,2) + ':' +
+                        that._padWithLeadingZeros(min,2) + ':' +
+                        that._padWithLeadingZeros(sec,2) + '.' +
+                        that._padWithLeadingZeros(msec,3) + 'Z';
+                return value;
+            } else if ( jsonType.elementType == 'time' ) {
+				// strip off the time-of-day and drop the rest...
+                hh = value.getHours();
+                min = value.getMinutes();
+                sec = value.getSeconds();
+                msec = value.getMilliseconds();
+				var n = value.getTimezoneOffset();
+				var sign = false;
+				if ( n < 0) {
+					n = -n;
+					sign = true;
+				}
+				zhh = Math.floor(n/60);
+				zmm = n - zhh*60;
+                zsign = (sign ? '+' : '-');
+                value = that._padWithLeadingZeros(hh,2) + ':' +
+                        that._padWithLeadingZeros(min,2) + ':' +
+                        that._padWithLeadingZeros(sec,2) + '.' +
+                        that._padWithLeadingZeros(msec,3) + zsign +
+						that._padWithLeadingZeros(zhh,2) +
+						that._padWithLeadingZeros(zmm,2);
+                return value;
+            } else if ( !jsonType.properties ) {
+                // this is an opaque BLOB w.r.t. database layer
+                return JSON.stringify(value);
+            } else {
+                // otherwise, enforce spec conformance...
+                // Only values in the properties list, and those
+                // must match the type definitions recursively.
+                refined = {};
+                for ( item in jsonType.properties ) {
+                    if ( value[item] != null ) {
+                        itemType = jsonType.properties[item];
+                        itemValue = that._toDatabaseFromElementType(itemType, value[item]);
+                        if ( itemValue != null ) {
+                            refined[item] = itemValue;
+                        }
+                    }
+                }
+                value = JSON.stringify(refined);
+                return value;
+            }
+        } else if ( jsonType.type == 'boolean' ) {
+            return (value ? '1' : '0'); // make it a boolean
+        } else if ( jsonType.type == 'integer' ) {
+            value = '' + Math.round(value);
+            return value;
+        } else if ( jsonType.type == 'number' ) {
+            return '' + value;
+        } else if ( jsonType.type == 'string' ) {
+            return '' + value;
+        } else {
+            throw new Error("unrecognized JSON schema type");
+        }
+    },
+    _reconstructElementPath: function(elementPath, jsonType, dbValue, topLevelObject) {
+        var value = this._fromDatabaseToElementType( jsonType, dbValue );
+        var path = elementPath.split('.');
+        var e = topLevelObject;
+        var term;
+        for (var j = 0 ; j < path.length-1 ; ++j) {
+            term = path[j];
+            if ( term == null || term == "" ) {
+                throw new Error("unexpected empty string in dot-separated variable name");
+            }
+            if ( e[term] == null ) {
+                e[term] = {};
+            }
+            e = e[term];
+        }
+        term = path[path.length-1];
+        if ( term == null || term == "" ) {
+            throw new Error("unexpected empty string in dot-separated variable name");
+        }
+        e[term] = value;
+    },
   withDb:function(ctxt, transactionBody) {
     var inContinuation = false;
     ctxt.append('database.withDb');
+    ctxt.sqlStatement = null;
     var that = this;
     try {
         if ( that.submissionDb ) {
             that.submissionDb.transaction(transactionBody, function(error,a) {
+                    if ( ctxt.sqlStatement != null ) {
+                        ctxt.append("withDb.transaction.error.sqlStmt", ctxt.sqlStatement.stmt);
+                    }
                     ctxt.append("withDb.transaction.error", error.message);
                     ctxt.append("withDb.transaction.error.transactionBody", transactionBody.toString());
                     inContinuation = true;
-                    ctxt.failure();
+                    ctxt.failure({message: "Error while accessing or saving values to the database."});
                     }, function() {
                         ctxt.append("withDb.transaction.success");
                         inContinuation = true;
@@ -35,54 +365,51 @@ define(['mdl','opendatakit','jquery'], function(mdl,opendatakit,$) {
                     });
         } else if(!window.openDatabase) {
             ctxt.append('database.withDb.notSupported');
-            alert('not supported');
+            console.error('w3c SQL interface is not supported');
             inContinuation = true;
-            ctxt.failure();
+            ctxt.failure({message: "Web client does not support the W3C SQL database standard."});
         } else {
-            var settings = opendatakit.getDatabaseSettings(ctxt);
+            var settings = opendatakit.getDatabaseSettings();
             var database = openDatabase(settings.shortName, settings.version, settings.displayName, settings.maxSize);
               // create the database...
             database.transaction(function(transaction) {
-                    transaction.executeSql('CREATE TABLE IF NOT EXISTS colProps('+
-                                    'tableId TEXT NOT NULL,'+
-                                    'elementKey TEXT NOT NULL,'+
-                                    'elementName TEXT NOT NULL,'+
-                                    'elementType TEXT NULL,'+
-                                    'listChildElementKeys TEXT NULL,'+
-                                    'isPersisted INTEGER NOT NULL,'+
-                                    'joinTableId TEXT NULL,'+
-                                    'joinElementKey TEXT NULL,'+
-                                    'displayVisible INTEGER NOT NULL,'+
-                                    'displayName TEXT NOT NULL,'+
-                                    'displayChoicesMap TEXT NULL,'+
-                                    'displayFormat TEXT NULL,'+
-                                    'smsIn INTEGER NOT NULL,'+
-                                    'smsOut INTEGER NOT NULL,'+
-                                    'smsLabel TEXT NULL,'+
-                                    'footerMode TEXT NOT NULL'+
-                                    ');', []);
-                    transaction.executeSql('CREATE TABLE IF NOT EXISTS keyValueStoreActive('+
-                                    'TABLE_UUID TEXT NOT NULL,'+ 
-                                    '_KEY TEXT NOT NULL,'+
-                                    '_TYPE TEXT NOT NULL,'+
-                                    'VALUE TEXT NOT NULL'+
-                                    ');', []);
+                    var td;
+                    td = that._createTableStmt('column_definitions', 
+                                                that.columnDefinitionsPredefinedColumns,
+                                                that.columnDefinitionsTableConstraint );
+                    ctxt.sqlStatement = td;
+                    transaction.executeSql(td.stmt, td.bind);
+                    td = that._createTableStmt('key_value_store_active', 
+                                                that.keyValueStoreActivePredefinedColumns,
+                                                that.keyValueStoreActiveTableConstraint );
+                    ctxt.sqlStatement = td;
+                    transaction.executeSql(td.stmt, td.bind);
+                    td = that._createTableStmt('table_definitions', 
+                                                that.tableDefinitionsPredefinedColumns);
+                    ctxt.sqlStatement = td;
+                    transaction.executeSql(td.stmt, td.bind);
                 }, function(error) {
+                    if ( ctxt.sqlStatement != null ) {
+                        ctxt.append("withDb.createDb.transaction.error.sqlStmt", ctxt.sqlStatement.stmt);
+                    }
                     ctxt.append("withDb.createDb.transaction.error", error.message);
-                    ctxt.append("withDb.transaction.error.transactionBody", "initializing database tables");
+                    ctxt.append("withDb.createDb.transaction.error.transactionBody", "initializing database tables");
                     inContinuation = true;
-                    ctxt.failure();
+                    ctxt.failure({message: "Error while initializing database tables."});
                 }, function() {
                     // DB is created -- record the submissionDb and initiate the transaction...
                     that.submissionDb = database;
                     ctxt.append("withDb.createDb.transacton.success");
                     that.submissionDb.transaction(transactionBody, function(error) {
-                                ctxt.append("withDb.transaction.error", error.message);
-                                ctxt.append("withDb.transaction.error.transactionBody", transactionBody.toString());
+                                if ( ctxt.sqlStatement != null ) {
+                                    ctxt.append("withDb.afterCreateDb.transaction.error.sqlStmt", ctxt.sqlStatement.stmt);
+                                }
+                                ctxt.append("withDb.afterCreateDb.transaction.error", error.message);
+                                ctxt.append("withDb.afterCreateDb.transaction.error.transactionBody", transactionBody.toString());
                                 inContinuation = true;
-                                ctxt.failure();
+                                ctxt.failure({message: "Error while accessing or saving values to the database."});
                             }, function() {
-                                ctxt.append("withDb.transaction.success");
+                                ctxt.append("withDb.afterCreateDb.transaction.success");
                                 inContinuation = true;
                                 ctxt.success();
                             });
@@ -90,244 +417,230 @@ define(['mdl','opendatakit','jquery'], function(mdl,opendatakit,$) {
         }
     } catch(e) {
         // Error handling code goes here.
+        if ( ctxt.sqlStatement != null ) {
+            ctxt.append("withDb.exception.sqlStmt", ctxt.sqlStatement.stmt);
+        }
         if(e.INVALID_STATE_ERR) {
             // Version number mismatch.
             ctxt.append('withDb.exception', 'invalid db version');
-            alert("Invalid database version.");
+            console.error("Invalid database version.");
         } else {
-            ctxt.append('withDb.exception', 'unknown error: ' + e);
-            alert("Unknown error " + e + ".");
+            ctxt.append('withDb.exception', 'unknown error: ' + String(e));
+            console.error("Unknown error " + String(e) + ".");
         }
         if ( !inContinuation ) {
             try {
-                ctxt.failure();
+                ctxt.failure({message: "Exception while accessing or saving values to the database."});
             } catch(e) {
-                ctxt.append('withDb.ctxt.failure.exception', 'unknown error: ' + e);
-                alert("withDb.ctxt.failure.exception " + e);
+                ctxt.append('withDb.ctxt.failure.exception', 'unknown error: ' + String(e));
+                console.error("withDb.ctxt.failure.exception " + String(e));
+                ctxt._log('E','withDb: exception caught while executing ctxt.failure(msg)');
+                alert('Fatal error while accessing or saving values to database');
             }
+        } else {
+            console.error("Unrecoverable Internal Error: Exception during success/failure continuation");
+            ctxt._log('E',"withDb: Unrecoverable Internal Error: Exception during success/failure continuation");
+            alert('Fatal error while accessing or saving values to database');
         }
         return;
     }
 },
-// save the given value under that name
-selectAllDbTableStmt:function(instanceId) {
-    var t = new Date();
-    var now = t.getTime();
-    var isoNow = t.toISOString();
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+//   DATA TABLE DATA
+//   DATA TABLE DATA
+//   DATA TABLE DATA
+//   DATA TABLE DATA
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// Records in the data table are always inserted.
+// Metadata columns are indicated by a leading underscore in the name.
+// 
+// The saved (metadata) column == "COMPLETE" if they are 'official' values.
+// Otherwise, saved == "INCOMPLETE" indicates a manual user savepoint and
+// saved IS NULL indicates an automatic savepoint. The timestamp indicates
+// the time at which the savepoint occured.
 
-    var tableId = opendatakit.getCurrentTableId();
-    var dbTableName = mdl.dbTableName;
-    var model = mdl.model;
-    
-    // TODO: select * ... for cross-table referencing...
-    var stmt = "select id";
-    for (var j = 0 ; j < this.dbTableMetadata.length ; ++j) {
-        var f = this.dbTableMetadata[j];
-        stmt += ", " + f.key;
-    }
-    for ( var f in model ) {
-        stmt += ', "' + f + '"';
-    }
-    stmt += ' from "' + dbTableName + '" where id=? group by id having timestamp = max(timestamp)'; 
+/**
+ * get the contents of the active data table row for a given instanceId
+ *
+ * Requires: no globals
+ */
+_selectAllFromDataTableStmt:function(dbTableName, instanceId) {
+    var stmt = 'select * from "' + dbTableName + '" where id=? group by id having timestamp = max(timestamp)'; 
     return {
         stmt : stmt,
         bind : [instanceId]
     };
 },
-// get the most recent value for the given name
-selectCrossTableInstanceMetaDataStmt:function(dbTableName, instanceId, name) {
-    return {
-            stmt : 'select VALUE from keyValueStoreActive where TABLE_UUID=? and _KEY=?',
-            bind : [opendatakit.getCurrentTableId(), name]    
-        };
-},
-// save the given value under that name
-insertDbTableStmt:function(name, type, value, isInstanceMetadata ) {
-    var t = new Date();
-    var now = t.getTime();
-    var isoNow = t.toISOString();
 
-    var tableId = opendatakit.getCurrentTableId();
-    var dbTableName = mdl.dbTableName;
-    var model = mdl.model;
-    
-    var bindings = [];
-    
-    var stmt = 'insert into "' + dbTableName + '" (id';
-    for (var j = 0 ; j < this.dbTableMetadata.length ; ++j) {
-        var f = this.dbTableMetadata[j];
-        stmt += ", " + f.key;
-    }
-    for ( var f in model ) {
-        stmt += ', "' + f + '"';
-    }
-    stmt += ") select id";
-    for (var j = 0 ; j < this.dbTableMetadata.length ; ++j) {
-        var f = this.dbTableMetadata[j];
-        if ( f.key == name && isInstanceMetadata ) {
-            if (value == null) {
-                stmt += ", null";
-            } else {
-                stmt += ", ?";
-                bindings.push(value);
-            }
-        } else if ( f.key == "lastModTime" ) {
-            stmt += ", ?";
-            bindings.push(isoNow);
-        } else if ( f.key == "timestamp" ) {
-            stmt += ", ?";
-            bindings.push(now);
-        } else if ( f.key == "xmlPublishTimestamp" ) {
-            stmt += ", null";
-        } else if ( f.key == "saved" || f.key == "xmlPublishStatus" ) {
-            stmt += ", null";
-        } else {
-            stmt += ", " + f.key;
+/**
+ * get the most recent 'COMPLETE' contents of the active data table row for a given instanceId
+ * If the row is currently being edited, this will display the last 'COMPLETE' old value.
+ *
+ * If supplied, the selection filter is applied to the returned set of 'COMPLETE' entries.
+ * This query is used for cascading select statements
+ *
+ * Requires: no globals
+ */
+_selectAllCompleteFromDataTableStmt:function(dbTableName, selection, selectionArgs) {
+    if ( selection != null ) {
+        var args = ['COMPLETE'];
+        if ( selectionArgs != null ) {
+            args = args.concat(selectionArgs);
         }
+        return {
+                stmt : 'select * from (select * from "' + dbTableName +
+                        '" where saved=?  group by id having timestamp = max(timestamp)) where ' + selection,
+                bind : args
+            };
+    } else {
+        return {
+                stmt : 'select * from "' + dbTableName + '" where saved=? group by id having timestamp = max(timestamp)',
+                bind : ['COMPLETE']    
+            };
     }
-    for ( var f in model ) {
-        if ( f == name && !isInstanceMetadata ) {
-            if (value == null) {
-                stmt += ", null";
-            } else {
-                stmt += ", ?";
-                bindings.push(value);
-            }
-        } else {
-            stmt += ', "' + f + '"';
-        }
-    }
-    stmt += ' from "' + dbTableName + '" where id=? group by id having timestamp = max(timestamp)'; 
-    bindings.push(opendatakit.getCurrentInstanceId());
-    return {
-        stmt : stmt,
-        bind : bindings
-        };
 },
-getKtvmElement:function(ktvmList, name) {
-    for( var j = 0 ; j < ktvmList.length ; ++j ) {
-        var f = ktvmList[j];
-        if ( f.key == name ) return f;
+selectMostRecentFromDataTableStmt:function(dbTableName, selection, selectionArgs) {
+    if ( selection != null ) {
+        return {
+                stmt :  'select * from (select * from "' + dbTableName +
+                        '" group by id having timestamp = max(timestamp)) where ' + selection,
+                bind : selectionArgs
+            };
+    } else {
+        return {
+                stmt : 'select * from "' + dbTableName + '" group by id having timestamp = max(timestamp)',
+                bind : []    
+            };
+    }
+},
+_getElementPathPairFromKvMap: function(kvMap, elementPath) {
+    var path = elementPath.split('.');
+    var e = kvMap;
+    var i, j, term, value, pathChain;
+    // work from most specific to least specific searching for a value match
+    for (j = path.length-1 ; j >= 0 ; --j) {
+        pathChain = '';
+        for (i = 0 ; i <= j ; ++i) {
+            pathChain = '.' + path[i] + pathChain;
+        }
+        pathChain = pathChain.substring(1);
+        if ( kvMap[pathChain] != null ) {
+            // found a definition...
+            term = kvMap[pathChain];
+            value = term.value;
+            // now find the definition for this element
+            // within the composite value
+            for ( i = j+1 ; i <= path.length-1 ; ++i ) {
+                value = value[path[i]];
+                if ( value == null ) break;
+            }
+            var e = {};
+            var f;
+            for ( f in term ) {
+                if ( f != "value" ) {
+                    e[f] = term[f];
+                }
+            }
+            e['value'] = value;
+            return {element: e, elementPath: pathChain};
+        }
     }
     return null;
 },
-// save the given values under that name
-// ktvmList : [ { key: blah, type: "string", value: "foo name", isInstanceMetadata: false } ...]
-// able to set instance and instanceMetadata values
-//
-// Requires: mdl.dbTableName, mdl.model, opendatakit.getCurrentInstanceId()
-//
-insertKtvmListDbTableStmt:function(ktvmList) {
+/**
+ * insert a new automatic savepoint for the given record and change the 
+ * database columns (including instance metadata columns) specified in the kvMap.
+ * Also used to set a manual savepoint when the kvMap specifies the 'saved' 
+ * instance metadata value (not accessible to external users).
+ *
+ * kvMap : { 'columnName' : { value: "foo name", isInstanceMetadata: false } ...}
+ *
+ * Assumes: all complex values are already reduced to its persisted column set.
+ *
+ * Requires: No global dependencies
+ */
+_insertKeyValueMapDataTableStmt:function(dbTableName, dataTableModel, instanceId, kvMap) {
     var t = new Date();
     var now = t.getTime();
-    var isoNow = t.toISOString();
-
-    var dbTableName = mdl.dbTableName;
-    var model = mdl.model;
     
     var bindings = [];
+    var processSet = {};
     
-    var stmt = 'insert into "' + dbTableName + '" (id';
-    for (var j = 0 ; j < this.dbTableMetadata.length ; ++j) {
-        var f = this.dbTableMetadata[j];
-        stmt += ", " + f.key;
-    }
-    for ( var f in model ) {
-        stmt += ', "' + f + '"';
-    }
-    stmt += ") select id";
-    for (var j = 0 ; j < this.dbTableMetadata.length ; ++j) {
-        var f = this.dbTableMetadata[j];
-        var ktvmElement = this.getKtvmElement(ktvmList, f.key);
-        if ( ktvmElement != null && ktvmElement.isInstanceMetadata ) {
-            if (value == null) {
-                stmt += ", null";
-            } else {
-                stmt += ", ?";
-                bindings.push(value);
-            }
-        } else if ( f.key == "lastModTime" ) {
-            stmt += ", ?";
-            bindings.push(isoNow);
-        } else if ( f.key == "timestamp" ) {
-            stmt += ", ?";
-            bindings.push(now);
-        } else if ( f.key == "xmlPublishTimestamp" ) {
-            stmt += ", null";
-        } else if ( f.key == "saved" || f.key == "xmlPublishStatus" ) {
-            stmt += ", null";
-        } else {
-            stmt += ", " + f.key;
+    var j, f, defElement, elementPathPair, kvElement, v;
+    var comma = '';
+    
+    var stmt = 'insert into "' + dbTableName + '" (';
+    for ( f in dataTableModel ) {
+        defElement = dataTableModel[f];
+        if ( defElement.isPersisted ) {
+            stmt += comma;
+            comma = ', ';
+            stmt += '"' + f + '"';
         }
     }
-    for ( var f in model ) {
-        var ktvmElement = this.getKtvmElement(ktvmList, f);
-        if ( ktvmElement != null && !ktvmElement.isInstanceMetadata ) {
-            if (value == null) {
-                stmt += ", null";
+    stmt += ") select ";
+    comma = '';
+    for (f in dataTableModel) {
+        defElement = dataTableModel[f];
+        if ( defElement.isPersisted ) {
+            stmt += comma;
+            comma = ', ';
+            var elementPath = defElement['elementPath'];
+            if ( elementPath == null ) elementPath = f;
+            // TODO: get kvElement for this elementPath
+            elementPathPair = this._getElementPathPairFromKvMap(kvMap, elementPath);
+            if ( elementPathPair != null ) {
+                kvElement = elementPathPair.element;
+                // track that we matched the keyname...
+                processSet[elementPathPair.elementPath] = true;
+                if (kvElement.value == null) {
+                    stmt += "null";
+                } else {
+                    stmt += "?";
+                    // remap kvElement.value into storage value...
+                    v = this._toDatabaseFromElementType(defElement, kvElement.value);
+                    bindings.push(v);
+                }
+            } else if ( f == "last_mod_time" ) {
+                stmt += "?";
+                bindings.push(now);
+            } else if ( f == "timestamp" ) {
+                stmt += "?";
+                bindings.push(now);
+            } else if ( f == "saved" ) {
+                stmt += "null";
             } else {
-                stmt += ", ?";
-                bindings.push(value);
+                stmt += '"' + f + '"';
             }
-        } else {
-            stmt += ', "' + f + '"';
         }
     }
     stmt += ' from "' + dbTableName + '" where id=? group by id having timestamp = max(timestamp)'; 
-    bindings.push(opendatakit.getCurrentInstanceId());
+    bindings.push(instanceId);
+    
+    for ( f in kvMap ) {
+        if ( processSet[f] != true ) {
+            console.error("_insertKeyValueMapDataTableStmt: kvMap contains unrecognized database column " + dbTableName + "." + f );
+        }
+    }
     return {
         stmt : stmt,
         bind : bindings
         };
 },
-markCurrentStateAsSavedDbTableStmt:function(status) {
-    var t = new Date();
-    var now = t.getTime();
-    var isoNow = t.toISOString();
-
-    var tableId = opendatakit.getCurrentTableId();
-    var dbTableName = mdl.dbTableName;
-    var model = mdl.model;
-    
-    var bindings = [];
-    
-    var stmt = 'insert into "' + dbTableName + '" (id';
-    for (var j = 0 ; j < this.dbTableMetadata.length ; ++j) {
-        var f = this.dbTableMetadata[j];
-        stmt += ", " + f.key;
-    }
-    for ( var f in model ) {
-        stmt += ', "' + f + '"';
-    }
-    stmt += ") select id";
-    for (var j = 0 ; j < this.dbTableMetadata.length ; ++j) {
-        var f = this.dbTableMetadata[j];
-        if ( f.key == "timestamp" ) {
-            stmt += ", ?";
-            bindings.push(now);
-        } else if ( f.key == "saved" ) {
-            stmt += ", ?";
-            bindings.push(status);
-        } else if ( f.key == "xmlPublishTimestamp" ) {
-            stmt += ", null";
-        } else if ( f.key == "xmlPublishStatus" ) {
-            stmt += ", null";
-        } else {
-            stmt += ", " + f.key;
-        }
-    }
-    for ( var f in model ) {
-        stmt += ', "' + f + '"';
-    }
-    stmt += ' from "' + dbTableName + '" where id=? group by id having timestamp = max(timestamp)'; 
-    bindings.push(opendatakit.getCurrentInstanceId());
-    return {
-        stmt : stmt,
-        bind : bindings
-        };
-},
-selectDbTableCountStmt:function(instanceId) {
-    var dbTableName = mdl.dbTableName;
+/**
+ * compose query to get 'rowcount' value -- the number of records with the given instanceId in the dbTableName.
+ *
+ * Requires: no globals
+ */
+_selectDataTableCountStmt:function(dbTableName, instanceId) {
     
     var stmt = 'select count(*) as rowcount from "' + dbTableName + '" where id=?';
     return {
@@ -335,89 +648,150 @@ selectDbTableCountStmt:function(instanceId) {
         bind : [instanceId]
     };
 },
-insertNewDbTableStmt:function(instanceId,instanceName,locale,instanceMetadataKeyValueListAsJSON) {
-
+/**
+ * insert an entirely new savepoint for the given instanceId (not based upon 
+ * the values in any existing record). Called when creating a new instance
+ * or (TODO) sub-form instance.
+ *
+ * kvMap : { 'columnName' : { value: "foo name", isInstanceMetadata: false } ...}
+ *
+ * additionally, the dataTablePredefinedColumns and model are assumed to be enhanced
+ * JSON schema maps. e.g.,
+ * 
+ * jsonSchemaMap : { 'columnName' : { type: 'elementType', 
+ *                            'default': 'defaultValue',
+ *                            isInstanceMetadata: false,
+ *                            isPersisted: true } ... }
+ *
+ * NON_CONFORMANCE NOTE: rather than express everything as a list of 
+ * types ['elementType', 'null'] we assume that 'null' is implicitly 
+ * allowed. Use isNotNullable: true to force a non-null database restriction.
+ * Enforcement of this is primarily in support of metadata.
+ *
+ * If a kvMap entry is present, its 'value' field is used (and null if 'value' 
+ * is undefined).If no kvMap entry is present, the ''default'' field, from 
+ * the dataTableModel, if present,  is used as the initial
+ * value for this column. If ''default'' is not present, null is used.
+ *
+ * Assumes: all complex values are already reduced to their persisted column set.
+ *
+ * Requires: No global context
+ */
+_insertNewKeyValueMapDataTableStmt:function(dbTableName, dataTableModel, kvMap) {
     var t = new Date();
     var now = t.getTime();
-    var isoNow = t.toISOString();
-
-    var tableId = opendatakit.getCurrentTableId();
-    var dbTableName = mdl.dbTableName;
-    var model = mdl.model;
     
     var bindings = [];
+    var processSet = {};
     
-    var stmt = 'insert into "' + dbTableName + '" (id';
-    for (var j = 0 ; j < this.dbTableMetadata.length ; ++j) {
-        var f = this.dbTableMetadata[j];
-        stmt += ", " + f.key;
-    }
-    for ( var f in model ) {
-        stmt += ', "' + f + '"';
-    }
-    stmt += ") values (?";
-    bindings.push(instanceId);
+    var j, f, defElement, kvElement;
+    var comma = '';
     
-    for (var j = 0 ; j < this.dbTableMetadata.length ; ++j) {
-        var f = this.dbTableMetadata[j];
-        if ( f.key == "lastModTime" ) {
-            stmt += ", ?";
-            bindings.push(isoNow);
-        } else if ( f.key == "timestamp" ) {
-            stmt += ", ?";
-            bindings.push(now);
-        } else if ( f.key == "instanceName" ) {
-            stmt += ", ?";
-            bindings.push(instanceName);
-        } else if ( f.key == "locale" ) {
-            stmt += ", ?";
-            bindings.push(locale);
-        } else if ( f.key == "instanceArguments" ) {
-            stmt += ", ?";
-            bindings.push(instanceMetadataKeyValueListAsJSON);
-        } else if ( f.isNullable ) {
-            stmt += ", null";
-        } else {
-            stmt += ", " + f.defaultValue
+    var stmt = 'insert into "' + dbTableName + '" (';
+    for ( f in dataTableModel ) {
+        defElement = dataTableModel[f];
+        if ( defElement.isPersisted ) {
+            stmt += comma;
+            comma = ', ';
+            stmt += '"' + f + '"';
         }
     }
-    for ( var f in model ) {
-        stmt += ", null";
+    stmt += ") values (";
+    comma = '';
+    for (f in dataTableModel) {    
+        defElement = dataTableModel[f];
+        if ( defElement.isPersisted ) {
+            stmt += comma;
+            comma = ', ';
+            kvElement = kvMap[f];
+            if ( kvElement != null ) {
+                // track that we matched the keyname...
+                processSet[f] = true;
+                if (kvElement.value == null) {
+                    stmt += "null";
+                } else {
+                    stmt += "?";
+                    bindings.push(kvElement.value);
+                }
+            } else if ( f == "last_mod_time" ) {
+                stmt += "?";
+                bindings.push(now);
+            } else if ( f == "timestamp" ) {
+                stmt += "?";
+                bindings.push(now);
+            } else {
+                // use default values from reference map...
+                if ( defElement['default'] == null ) {
+                    stmt += "null";
+                } else {
+                    stmt += "?";
+                    bindings.push(defElement['default']);
+                }
+            }
+        }
     }
-    stmt += ")"; 
+    stmt += ');'; 
+    
+    for ( f in kvMap ) {
+        if ( processSet[f] != true ) {
+            console.error("_insertNewKeyValueMapDataTableStmt: kvMap contains unrecognized database column " + dbTableName + "." + f );
+        }
+    }
     return {
         stmt : stmt,
         bind : bindings
-    };
+        };
 },
-deletePriorChangesDbTableStmt:function() {
-    var dbTableName = mdl.dbTableName;
+/**
+ * Delete all but the last savepoint for this instanceId.
+ *
+ * NOTE: This can make a currently-visible row invisible in a concurrent ODK Tables if 
+ * the current record is not a 'COMPLETE' record. We prevent this by only calling this 
+ * within the save-as-complete transaction.
+ *
+ * Requires: no globals
+ */
+_deletePriorChangesDataTableStmt:function(dbTableName, instanceId) {
     
     var stmt = 'delete from "' + dbTableName + '" where id=? and timestamp not in (select max(timestamp) from "' + dbTableName + '" where id=?);';
     return {
         stmt : stmt,
-        bind : [opendatakit.getCurrentInstanceId(), opendatakit.getCurrentInstanceId()]
+        bind : [instanceId, instanceId]
     };
 },
-deleteUnsavedChangesDbTableStmt:function() {
-    var dbTableName = mdl.dbTableName;
+/**
+ * Delete all automatic save points for a row. This leaves all the user's manual
+ * 'INCOMPLETE' savepoints and any 'COMPLETE' savepoints.
+ *
+ * Requires: no globals
+ */
+_deleteUnsavedChangesDataTableStmt:function(dbTableName, instanceId) {
     return {
         stmt : 'delete from "' + dbTableName + '" where id=? and saved is null;',
-        bind : [opendatakit.getCurrentInstanceId()]
+        bind : [instanceId]
     };
 },
-deleteDbTableStmt:function(formid, instanceid) {
-    var dbTableName = mdl.dbTableName;
+/**
+ * Delete the instanceId entirely from the table (all savepoints).
+ *
+ * Requires: no globals
+ */
+_deleteDataTableStmt:function(dbTableName, instanceid) {
     return {
         stmt : 'delete from "' + dbTableName + '" where id=?;',
         bind : [instanceid]
     };
 },
-getAllFormInstancesStmt:function() {
-    var dbTableName = mdl.dbTableName;
+/**
+ * Retrieve the latest information on all instances in a given data table.
+ * Ordered by most recent first, in reverse chronological order.
+ *
+ * Requires: no globals
+ */
+_getAllInstancesDataTableStmt:function(dbTableName) {
     return {
-            stmt : 'select instanceName, timestamp, saved, locale, xmlPublishTimestamp, xmlPublishStatus, id from "' +
-                    dbTableName + '" where instanceName is not null group by id having timestamp = max(timestamp);',
+            stmt : 'select instance_name, timestamp, saved, locale, id from "' +
+                    dbTableName + '" group by id having timestamp = max(timestamp) order by timestamp desc;',
             bind : []
             };
 },
@@ -426,40 +800,87 @@ getAllFormInstancesStmt:function() {
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-//   META DATA
-//   META DATA
-//   META DATA
-//   META DATA
+//   TABLE META DATA
+//   TABLE META DATA
+//   TABLE META DATA
+//   TABLE META DATA
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-// get the most recent value for the given name
-selectTableMetaDataStmt:function(name) {
+_selectTableDefinitionsDataStmt:function(table_id) {
     return {
-            stmt : 'select VALUE from keyValueStoreActive where TABLE_UUID=? and _KEY=?',
-            bind : [opendatakit.getCurrentTableId(), name]    
+            stmt : 'select * from table_definitions where table_id=?',
+            bind : [table_id]    
         };
 },
-selectAllTableMetaDataStmt:function(tableId) {
+
+_selectAllTableDbNamesAndIdsDataStmt: function() {
     return {
-            stmt : 'select _KEY, _TYPE, VALUE from keyValueStoreActive where TABLE_UUID=?',
-            bind : [tableId]    
+            stmt: 'select db_table_name, table_id from table_definitions',
+            bind: []
+        };
+},
+_selectAllTableMetaDataStmt:function(table_id) {
+    return {
+            stmt : 'select key, type, value from key_value_store_active where table_id=? and partition=? and aspect=?',
+            bind : [table_id, "Table", "global"]    
         };
 },
 // save the given value under that name
-insertTableMetaDataStmt:function(name, type, value) {
+insertTableMetaDataStmt:function(table_id, name, type, value) {
     var now = new Date().getTime();
     if (value == null) {
         return {
-            stmt : 'insert into keyValueStoreActive (TABLE_UUID, _KEY, _TYPE, VALUE) values (?,?,?,"");',
-            bind : [opendatakit.getCurrentTableId(), name, type]
+            stmt : 'insert into key_value_store_active (table_id, partition, aspect, key, type, value) values (?,?,?,?,?,"");',
+            bind : [table_id, "Table", "global", name, type]
         };
     } else {
         return {
-            stmt : 'insert into keyValueStoreActive (TABLE_UUID, _KEY, _TYPE, VALUE) values (?,?,?,?)',
-            bind : [opendatakit.getCurrentTableId(), name, type, value]
+            stmt : 'insert into key_value_store_active (table_id, partition, aspect, key, type, value) values (?,?,?,?,?,?)',
+            bind : [table_id, "Table", "global", name, type, value]
+        };
+    }
+},
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+//   COLUMN META DATA
+//   COLUMN META DATA
+//   COLUMN META DATA
+//   COLUMN META DATA
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+_selectColumnDefinitionsDataStmt:function(table_id) {
+    return {
+            stmt : 'select * from column_definitions where table_id=?',
+            bind : [table_id]    
+        };
+},
+_selectAllColumnMetaDataStmt:function(table_id) {
+    return {
+            stmt : 'select aspect as element_key, key, type, value from key_value_store_active where table_id=? and partition=?',
+            bind : [table_id, "Column"]    
+        };
+},
+// save the given value under that name
+insertColumnMetaDataStmt:function(table_id, elementKey, name, type, value) {
+    var now = new Date().getTime();
+    if (value == null) {
+        return {
+            stmt : 'insert into key_value_store_active (table_id, partition, aspect, key, type, value) values (?,?,?,?,?,"");',
+            bind : [table_id, "Column", elementKey, name, type]
+        };
+    } else {
+        return {
+            stmt : 'insert into key_value_store_active (table_id, partition, aspect, key, type, value) values (?,?,?,?,?,?)',
+            bind : [table_id, "Column", elementKey, name, type, value]
         };
     }
 },
@@ -477,219 +898,97 @@ insertTableMetaDataStmt:function(name, type, value) {
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-putData:function(ctxt, name, type, value) {
+putData:function(ctxt, name, value) {
       var that = this;
+      var kvMap = {};
       ctxt.append('putData', 'name: ' + name);
-      that.withDb( ctxt, function(transaction) {
-            var is = that.insertDbTableStmt(name, type, value, false);
-            transaction.executeSql(is.stmt, is.bind, function(transaction, result) {
-                ctxt.append("putData: successful insert: " + name);
-            });
-        });
+      kvMap[name] = {value: value, isInstanceMetadata: false };
+      that.putDataKeyValueMap(ctxt, kvMap );
 },
-putInstanceMetaData:function(ctxt, name, type, value) {
+putInstanceMetaData:function(ctxt, name, value) {
       var that = this;
+      var kvMap = {};
+      var dbColumnName;
+      var f;
       ctxt.append('putInstanceMetaData', 'name: ' + name);
-      that.withDb( ctxt, function(transaction) {
-            var is = that.insertDbTableStmt(name, type, value, true);
-            transaction.executeSql(is.stmt, is.bind, function(transaction, result) {
-                ctxt.append("putInstanceMetaData: successful insert: " + name);
-            });
-        });
+      for ( f in that.dataTablePredefinedColumns ) {
+        if ( that.dataTablePredefinedColumns[f].elementPath == name ) {
+            dbColumnName = f;
+            break;
+        }
+      }
+      if ( dbColumnName == null ) {
+        ctxt.append('putInstanceMetaData.elementPath.missing', 'name: ' + name);
+        ctxt.failure({message:"Unrecognized instance metadata"});
+        return;
+      }
+      // and still use the elementPath for the lookup.
+      // this simply ensures that the name is exported above 
+      // the database layer. 
+      // The database layer uses putDataKeyValueMap()
+      // for lower-level manipulations.
+      kvMap[name] = {value: value, isInstanceMetadata: true };
+      that.putDataKeyValueMap(ctxt, kvMap );
 },
 /**
- * ktvmlist is: [ { key: 'keyname', type: 'typename', value: 'val', isInstanceMetadata: false }, ...]
+ * kvMap is: { 'keyname' : {value: 'val', isInstanceMetadata: false }, ... }
+ *
+ * Requires: mdl to be initialized -- e.g., mdl.tableMetadata, mdl.dataTableModel
  */
-putDataKeyTypeValueMap:function(ctxt, ktvmlist) {
+putDataKeyValueMap:function(ctxt, kvMap) {
       var that = this;
-      ctxt.append('database.putDataKeyTypeValueMap', ktvmlist.length );
+      var property;
+      var names = '';
+      for ( property in kvMap ) {
+        names += "," + property;
+      }
+      names = names.substring(1);
+      ctxt.append('database.putDataKeyValueMap.initiated', names );
       that.withDb( ctxt, function(transaction) {
-            var is = that.insertKtvmListDbTableStmt(ktvmlist);
+            var is = that._insertKeyValueMapDataTableStmt(mdl.tableMetadata.dbTableName, mdl.dataTableModel, opendatakit.getCurrentInstanceId(), kvMap);
+            ctxt.sqlStatement = is;
             transaction.executeSql(is.stmt, is.bind, function(transaction, result) {
-                ctxt.append("putDataKeyTypeValueMap: successful insert: " + ktvmlist.length);
+                ctxt.append("putDataKeyValueMap.success", names);
             });
         });
 },
-asDbColumnDefinition:function(defn) {
-    // { key: 'syncTag', type: 'string', isNullable: true },
-    var prefix = defn.key + " ";
-    var postfix = (defn.isNullable ? " NULL" : " NOT NULL");
-    var type = defn.type;
-    if ( type == 'string' ) {
-        return prefix + "TEXT" + postfix;
-    } else if ( type == 'integer' ) {
-        return prefix + "INTEGER" + postfix;
-    } else if ( type == 'number' ) {
-        return prefix + "REAL" + postfix;
-    } else if ( type == 'boolean' ) {
-        return prefix + "INTEGER" + postfix;
-    } else if ( type == 'object' ) {
-        return prefix + "TEXT" + postfix;
-    } else if ( type == 'array' ) {
-        return prefix + "TEXT" + postfix;
-    } else {
-        alert("asDbColumnDefinition.unknown type");
-    }
-},
-asColPropsEntry:function(tableId, defn) {
-    return {
-        tableId: tableId,
-        elementKey: defn.key,
-        elementName: (defn.propertyName != null ? defn.propertyName : defn.key),
-        elementType: (defn.name != null ? defn.name : defn.type),
-        listChildElementKeys: null,
-        isPersisted: 1,
-        joinTableId: null,
-        joinElementKey: null,
-        displayVisible: 1,
-        displayName: (defn.title != null ? defn.title : defn.key),
-        displayChoicesMap: null,
-        displayFormat: null,
-        smsIn: 1,
-        smsOut: 1,
-        smsLabel: null,
-        footerMode: '0'
-    };
-},
-convertToMdlFromDbDataType:function(defn, storageValue) {
-    if ( storageValue == null ) {
-        return null;
-    }
-    var type = defn.type;
-    if ( type == 'string' ) {
-        return storageValue;
-    } else if ( type == 'integer' ) {
-        if ( storageValue == "" ) {
-            return null;
-        }
-        return 0+storageValue;
-    } else if ( type == 'number' ) {
-        if ( storageValue == "" ) {
-            return null;
-        }
-        return 0.0+storageValue;
-    } else if ( type == 'boolean' ) {
-        if ( storageValue == "" ) {
-            return null;
-        }
-        return (0+storageValue) != 0;
-    } else if ( type == 'object' ) {
-        if ( storageValue == "" ) {
-            return null;
-        }
-        return JSON.parse(storageValue);
-    } else if ( type == 'array' ) {
-        if ( storageValue == "" ) {
-            return null;
-        }
-        return JSON.parse(storageValue);
-    } else {
-        alert("convertToMdlFromDbDataType.unknown type");
-    }
-},
-convertToDbFromMdlDataType:function(defn, mdlValue) {
-    if ( mdlValue == null ) {
-        return null;
-    }
-    var type = defn.type;
-    if ( type == 'string' ) {
-        return mdlValue;
-    } else if ( type == 'integer' ) {
-        return 0+mdlValue;
-    } else if ( type == 'number' ) {
-        return 0.0+mdlValue;
-    } else if ( type == 'boolean' ) {
-        return ( mdlValue ? 1 : 0);
-    } else if ( type == 'object' ) {
-        return JSON.stringify(mdlValue);
-    } else if ( type == 'array' ) {
-        return JSON.stringify(mdlValue);
-    } else {
-        alert("convertToDbFromMdlDataType.unknown type");
-    }
-},
-getAllData:function(ctxt, instanceId) {
+getAllData:function(ctxt, dataTableModel, dbTableName, instanceId) {
       var that = this;
       var tlo = { data: {}, metadata: {}};
       ctxt.append('getAllData');
-      that.withDb( $.extend({},ctxt,{success:function() {
+      var tmpctxt = $.extend({},ctxt,{success:function() {
                 ctxt.append("getAllData.success");
-                ctxt.success(tlo)}}), function(transaction) {
-        var ss = that.selectAllDbTableStmt(instanceId);
+                ctxt.success(tlo);
+            }});
+      that.withDb( tmpctxt, function(transaction) {
+        var ss = that._selectAllFromDataTableStmt(dbTableName, instanceId);
+        tmpctxt.sqlStatement = ss;
         transaction.executeSql(ss.stmt, ss.bind, function(transaction, result) {
             var len = result.rows.length;
             if (len == 0 ) {
-                alert("no record for getAllData!");
+                throw new Error("no record for getAllData!");
             } else if (len != 1 ) {
-                alert("not exactly one record in getAllData!");
+                throw new Error("not exactly one record in getAllData!");
             } else {
                 var row = result.rows.item(0);
-                var model = mdl.model;
-
-                for (var i = 0 ; i < that.dbTableMetadata.length ; ++i) {
-                    var f = that.dbTableMetadata[i];
-                    var dbKey = f.key;
-                    var dbValue = row[dbKey];
-                    var dbType = f.type;
-    
-                    var elem = {};
-                    elem['type'] = dbType;
-                    if ( dbType == 'string' ) {
-                    } else if ( dbType == 'integer') {
-                    } else if ( dbType == 'number') {
-                    } else if ( dbType == 'boolean') {
-                    } else if ( dbType == 'array') {
-                    } else if ( dbType == 'object') {
-                    }
-                    elem['value'] = dbValue;
-                    
-                    var path = dbKey.split('.');
-                    var e = tlo.metadata;
-                    var term;
-                    for (var j = 0 ; j < path.length-1 ; ++j) {
-                        term = path[j];
-                        if ( term == null || term == "" ) {
-                            throw new Error("unexpected empty string in dot-separated variable name");
+                var dbKey, dbValue, jsonType;
+                var elementPath;
+                
+                // and then just snarf the fields...
+                for ( dbKey in dataTableModel ) {
+                    jsonType = dataTableModel[dbKey];
+                    if ( jsonType.isPersisted ) {
+                        dbValue = row[dbKey];
+                        elementPath = jsonType.elementPath;
+                        if ( elementPath != null ) {
+                            // we expose it to the Javascript layer if it has an elementPath...
+                            if ( jsonType.elementSet == 'instanceMetadata' ) {
+                                that._reconstructElementPath(elementPath, jsonType, dbValue, tlo.metadata );
+                            } else {
+                                that._reconstructElementPath(elementPath, jsonType, dbValue, tlo.data );
+                            }
                         }
-                        if ( e[term] == null ) {
-                            e[term] = {};
-                        }
-                        e = e[term];
                     }
-                    term = path[path.length-1];
-                    if ( term == null || term == "" ) {
-                        throw new Error("unexpected empty string in dot-separated variable name");
-                    }
-                    e[term] = elem;
-                }
-
-                for ( var f in mdl.model ) {
-                    var dbKey = f;
-                    var dbValue = row[dbKey];
-                    var dbType = f.type;
-    
-                    var elem = {};
-                    elem['type'] = dbType;
-                    elem['value'] = dbValue;
-                    
-                    var path = dbKey.split('.');
-                    var e = tlo.data;
-                    var term;
-                    for (var j = 0 ; j < path.length-1 ; ++j) {
-                        term = path[j];
-                        if ( term == null || term == "" ) {
-                            throw new Error("unexpected empty string in dot-separated variable name");
-                        }
-                        if ( e[term] == null ) {
-                            e[term] = {};
-                        }
-                        e = e[term];
-                    }
-                    term = path[path.length-1];
-                    if ( term == null || term == "" ) {
-                        throw new Error("unexpected empty string in dot-separated variable name");
-                    }
-                    e[term] = elem;
                 }
             }
         });
@@ -703,7 +1002,7 @@ cacheAllData:function(ctxt, instanceId) {
         mdl.data = tlo.data;
         opendatakit.setCurrentInstanceId(instanceId);
         ctxt.success();
-    }}), instanceId);
+    }}), mdl.dataTableModel, mdl.tableMetadata.dbTableName, instanceId);
 },
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
@@ -719,86 +1018,98 @@ cacheAllData:function(ctxt, instanceId) {
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-putTableMetaData:function(ctxt, name, type, value) {
-      var that = this;
-      ctxt.append('putTableMetaData');
-      that.withDb( ctxt, function(transaction) {
-            var is = that.insertTableMetaDataStmt(name, type, value);
-            transaction.executeSql(is.stmt, is.bind, function(transaction, result) {
-                console.log("putTableMetaData: successful insert: " + name);
-            });
-        });
-},
-putTableMetaDataKeyTypeValueMapHelper:function(idx, that, ktvlist) {
-    return function(transaction) {
-        // base case...
-        if ( idx >= ktvlist.length ) {
-            console.log("putTableMetaDataKeyValueMap: successful insert: " + ktvlist.length);
-            return;
-        }
-        var key = ktvlist[idx].key;
-        var type = ktvlist[idx].type;
-        var value = ktvlist[idx].value; // may be null...
-        var is = that.insertTableMetaDataStmt(key, type, value);
-        transaction.executeSql(is.stmt, is.bind, that.putTableMetaDataKeyTypeValueMapHelper(idx+1, that, ktvlist));
-    };
-},
-/**
- * ktvlist is: [ { key: 'keyname', type: 'typename', value: 'val' }, ...]
- */
-putTableMetaDataKeyTypeValueMap:function(ctxt, ktvlist) {
-      ctxt.append('database.putMetaDataKeyTypeValueMap', ktvlist.length);
-      var that = this;
-      that.withDb( ctxt, that.putTableMetaDataKeyTypeValueMapHelper(0, that, ktvlist));
-},
-coreGetAllTableMetadata:function(transaction, tableId, tlo) {
+coreGetAllTableMetadata:function(transaction, ctxt, tlo) {
     var that = this;
-    var ss = that.selectAllTableMetaDataStmt(tableId);
+    var outcome = true;
+    var ss;
+    ss = that._selectTableDefinitionsDataStmt(tlo.table_id);
+    ctxt.sqlStatement = ss;
     transaction.executeSql(ss.stmt, ss.bind, function(transaction, result) {
         var len = result.rows.length;
-        for (var i = 0 ; i < len ; ++i ) {
-            var row = result.rows.item(i);
-            var dbKey = row['_KEY'];
-            var dbValue = row['VALUE'];
-            var dbType = row['_TYPE'];
-            
-            var elem = {};
-            elem['type'] = dbType;
-            elem['value'] = dbValue;
-            
-            var path = dbKey.split('.');
-            var e = tlo;
-            var term;
-            for (var j = 0 ; j < path.length-1 ; ++j) {
-                term = path[j];
-                if ( term == null || term == "" ) {
-                    throw new Error("unexpected empty string in dot-separated variable name");
-                }
-                if ( e[term] == null ) {
-                    e[term] = {};
-                }
-                e = e[term];
-            }
-            term = path[path.length-1];
-            if ( term == null || term == "" ) {
-                throw new Error("unexpected empty string in dot-separated variable name");
-            }
-            e[term] = elem;
+        var f;
+        var row;
+        var defn;
+        if ( len != 1 ) {
+            throw new Error("Internal error: unknown table_id");
         }
+        row = result.rows.item(0);
+        for ( f in that.tableDefinitionsPredefinedColumns ) {
+            defn = that.tableDefinitionsPredefinedColumns[f];
+            if ( defn.elementPath ) {
+                that._reconstructElementPath(defn.elementPath, defn, row[f], tlo.tableMetadata );
+            }
+        }
+        ss = that._selectAllTableMetaDataStmt(tlo.table_id);
+        ctxt.sqlStatement = ss;
+        transaction.executeSql(ss.stmt, ss.bind, function(transaction, result) {
+            var len = result.rows.length;
+            var defn;
+            for (var i = 0 ; i < len ; ++i ) {
+                var row = result.rows.item(i);
+                var dbKey = row['key'];
+                var dbValue = row['value'];
+                var dbType = row['type'];
+                defn = that._getAccessibleTableKeyDefinition(dbKey);
+                if ( defn != null ) {
+                    that._reconstructElementPath(defn.elementPath, defn, dbValue, tlo.tableMetadata );
+                }
+            }
+            // read all column definitions...
+            ss = that._selectColumnDefinitionsDataStmt(tlo.table_id);
+            ctxt.sqlStatement = ss;
+            transaction.executeSql(ss.stmt, ss.bind, function(transaction, result) {
+                var len = result.rows.length;
+                var i, row;
+                var f;
+                var defn;
+                var colDefn;
+                tlo.columnMetadata = {};
+                for ( i = 0 ; i < len ; ++i ) {
+                    row = result.rows.item(i);
+                    colDefn = {};
+                    for ( f in that.columnDefinitionsPredefinedColumns ) {
+                        defn = that.columnDefinitionsPredefinedColumns[f];
+                        if ( defn.elementPath ) {
+                            that._reconstructElementPath(defn.elementPath, defn, row[f], colDefn );
+                        }
+                    }
+                    tlo.columnMetadata[defn.elementKey] = defn;
+                }
+                
+                ss = that._selectAllColumnMetaDataStmt(tlo.table_id);
+                ctxt.sqlStatement = ss;
+                transaction.executeSql(ss.stmt, ss.bind, function(transaction, result) {
+                    var len = result.rows.length;
+                    var defn;
+                    for (var i = 0 ; i < len ; ++i ) {
+                        var row = result.rows.item(i);
+                        var elementKey = row['element_key'];
+                        var dbKey = row['key'];
+                        var dbValue = row['value'];
+                        var dbType = row['type'];
+                        defn = that._getAccessibleColumnKeyDefinition(dbKey);
+                        if ( defn != null ) {
+                            that._reconstructElementPath(defn.elementPath, defn, dbValue, tlo.columnMetadata[elementKey] );
+                        }
+                    }
+                });
+            });
+        });
     });
 },
-getAllTableMetaData:function(ctxt, tableId) {
+getAllTableMetaData:function(ctxt, table_id) {
     var that = this;
-    var tlo = {};
+    var tlo = { tableMetadata: {}, columnMetadata: {}, table_id: table_id };
     ctxt.append('getAllTableMetaData');
-    that.withDb( $.extend({},ctxt,{success:function() {
+    var tmpctxt = $.extend({},ctxt,{success:function() {
                 ctxt.append('getAllTableMetaData.success');
                 ctxt.success(tlo);
-            }}), function(transaction) {
-            that.coreGetAllTableMetadata(transaction, tableId, tlo);
+            }});
+    that.withDb( tmpctxt, function(transaction) {
+            that.coreGetAllTableMetadata(transaction, tmpctxt, tlo);
         });
 },
-cacheAllTableMetaData:function(ctxt) {
+cacheAllTableMetaData:function(ctxt, table_id) {
     var that = this;
     // pull everything for synchronous read access
     ctxt.append('cacheAllTableMetaData.getAllTableMetaData');
@@ -808,56 +1119,86 @@ cacheAllTableMetaData:function(ctxt) {
             tlo = {};
         }
         // these values come from the current webpage
-        tlo.formDef = mdl.qp.formDef;
-        tlo.formId = mdl.qp.formId;
-        tlo.formVersion = mdl.qp.formVersion;
-        tlo.formLocales = mdl.qp.formLocales;
-        tlo.formTitle = mdl.qp.formTitle;
-        // update qp
-        mdl.qp = tlo;
+        // tlo.formDef = mdl.formDef;
+        // mdl.formDef = tlo.formDef;
+        mdl.tableMetadata = tlo.tableMetadata;
+        mdl.columnMetadata = tlo.columnMetadata;
+        mdl.metadata = tlo.metadata;
+        mdl.data = tlo.data;
         ctxt.success();
-        }}), opendatakit.getCurrentTableId());
+        }}), table_id);
 },
 save_all_changes:function(ctxt, asComplete) {
       var that = this;
     // TODO: if called from Java, ensure that all data on the current page is saved...
-         ctxt.append('save_all_changes');
-      that.withDb( $.extend({}, ctxt, {success:function() {
+      ctxt.append('save_all_changes');
+      var tmpctxt = $.extend({}, ctxt, {success:function() {
                 ctxt.append('save_all_changes.markCurrentStateSaved.success', 
-                mdl.qp.formId.value + " instanceId: " + opendatakit.getCurrentInstanceId() + " asComplete: " + asComplete);
+                opendatakit.getSettingValue('form_id') + " instanceId: " + opendatakit.getCurrentInstanceId() + " asComplete: " + asComplete);
                 ctxt.success();
-            }}), 
+            }});
+      that.withDb( tmpctxt, 
             function(transaction) {
-                var cs = that.markCurrentStateAsSavedDbTableStmt((asComplete ? 'COMPLETE' : 'INCOMPLETE'));
-                transaction.executeSql(cs.stmt, cs.bind, function(transaction, result) {
-                    if ( asComplete ) {
-                        ctxt.append('save_all_changes.cleanup');
-                        // and now delete the change history...
-                        var cs = that.deletePriorChangesDbTableStmt();
-                        transaction.executeSql(cs.stmt, cs.bind);
-                    }
+                var kvMap = {};
+                kvMap['saved'] = {value: (asComplete ? 'COMPLETE' : 'INCOMPLETE'), isInstanceMetadata: true };
+                var is = that._insertKeyValueMapDataTableStmt(mdl.tableMetadata.dbTableName, mdl.dataTableModel, opendatakit.getCurrentInstanceId(), kvMap);
+                tmpctxt.sqlStatement = is;
+                transaction.executeSql(is.stmt, is.bind, function(transaction, result) {
+                    ctxt.append('save_all_changes.cleanup');
+                    // and now delete the change history...
+                    var cs = that._deletePriorChangesDataTableStmt(mdl.tableMetadata.dbTableName, opendatakit.getCurrentInstanceId());
+                    tmpctxt.sqlStatement = cs;
+                    transaction.executeSql(cs.stmt, cs.bind);
                 });
             }
         );
-    // TODO: should we have a failure callback in to ODK Collect?
 },
 ignore_all_changes:function(ctxt) {
       var that = this;
       ctxt.append('database.ignore_all_changes');
       that.withDb( ctxt, function(transaction) {
-            var cs = that.deleteUnsavedDbTableChangesStmt();
+            var cs = that._deleteUnsavedChangesDataTableStmt(mdl.tableMetadata.dbTableName, opendatakit.getCurrentInstanceId());
+            ctxt.sqlStatement = cs;
             transaction.executeSql(cs.stmt, cs.bind);
         });
 },
- delete_all:function(ctxt, formid, instanceId) {
+ delete_all:function(ctxt, instanceId) {
       var that = this;
       ctxt.append('delete_all');
       that.withDb( ctxt, function(transaction) {
-            var cs = that.deleteDbTableStmt(formid, instanceId);
+            var cs = that._deleteDataTableStmt(mdl.tableMetadata.dbTableName, instanceId);
+            ctxt.sqlStatement = cs;
             transaction.executeSql(cs.stmt, cs.bind);
         });
 },
-initializeInstance:function(ctxt, instanceId, instanceMetadataKeyValueList) {
+get_all_instances:function(ctxt, subsurveyType) {
+      var that = this;
+      // TODO: support subforms. The subsurveyType is the form_id of the 
+      // subform. This should then be used to read its config, issue the 
+      // query against it's mdl.tableMetadata.dbTableName, etc.
+      var instanceList = [];
+      ctxt.append('get_all_instances', subsurveyType);
+      that.withDb($.extend({},ctxt,{
+        success: function() {
+            ctxt.success(instanceList);
+        }}), function(transaction) {
+            var ss = that._getAllInstancesDataTableStmt(mdl.tableMetadata.dbTableName);
+            ctxt.sqlStatement = ss;
+            transaction.executeSql(ss.stmt, ss.bind, function(transaction, result) {
+                for ( var i = 0 ; i < result.rows.length ; i+=1 ) {
+                    var instance = result.rows.item(i);
+                    instanceList.push({
+                        instanceName: instance.instance_name,
+                        instance_id: instance.id,
+                        last_saved_timestamp: new Date(instance.timestamp),
+                        saved_status: instance.saved,
+                        locale: instance.locale
+                    });
+                }
+            });
+        });
+},
+initializeInstance:function(ctxt, instanceId, instanceMetadataKeyValueMap) {
     var that = this;
     if ( instanceId == null ) {
         ctxt.append('initializeInstance.noInstance');
@@ -867,10 +1208,12 @@ initializeInstance:function(ctxt, instanceId, instanceMetadataKeyValueList) {
         ctxt.success();
     } else {
         ctxt.append('initializeInstance.access', instanceId);
-        that.withDb( $.extend({},ctxt,{success:function() {
+        var tmpctxt = $.extend({},ctxt,{success:function() {
                 that.cacheAllData(ctxt, instanceId);
-            }}), function(transaction) {
-            var cs = that.selectDbTableCountStmt(instanceId);
+            }});
+        that.withDb( tmpctxt, function(transaction) {
+            var cs = that._selectDataTableCountStmt(mdl.tableMetadata.dbTableName, instanceId);
+            tmpctxt.sqlStatement = cs;
             transaction.executeSql(cs.stmt, cs.bind, function(transaction, result) {
                 var count = 0;
                 if ( result.rows.length == 1 ) {
@@ -882,199 +1225,399 @@ initializeInstance:function(ctxt, instanceId, instanceMetadataKeyValueList) {
                     // construct a friendly name for this new form...
                     var date = new Date();
                     var dateStr = date.toISOString();
-                    var locale = opendatakit.getDefaultFormLocale(mdl.qp.formDef.value);
+                    var locale = opendatakit.getDefaultFormLocale(mdl.formDef);
                     var instanceName = dateStr; // .replace(/\W/g, "_")
-                    var cs = that.insertNewDbTableStmt(instanceId, instanceName, locale, JSON.stringify(instanceMetadataKeyValueList));
+                    
+                    var kvMap = {};
+                    kvMap.id = { value: instanceId, isInstanceMetadata: true };
+                    kvMap.instance_name = { value: instanceName, isInstanceMetadata: true };
+                    kvMap.locale = { value: locale, isInstanceMetadata: true };
+                    var propertyCount = 0;
+                    for ( var f in instanceMetadataKeyValueMap ) {
+                        ++propertyCount;
+                    }
+                    if ( propertyCount != 0 ) {
+                        console.error("Extra arguments found in instanceMetadataKeyValueMap: " + instanceMetadataKeyValueMap );
+                    }
+                    var cs = that._insertNewKeyValueMapDataTableStmt(mdl.tableMetadata.dbTableName, mdl.dataTableModel, kvMap);
+                    tmpctxt.sqlStatement = cs;
                     transaction.executeSql(cs.stmt, cs.bind);
                 }
             });
         });
     }
 },
-initializeTables:function(ctxt, formDef, tableId, protoTableMetadata, formPath) {
+initializeTables:function(ctxt, formDef, table_id, formPath) {
     var that = this;
-    var tlo = {};
+    var tlo = {data: {},  // dataTable instance data values
+        metadata: {}, // dataTable instance Metadata: (instanceName, locale)
+        tableMetadata: {}, // table_definitions and key_value_store_active values for ("table", "global") of: table_id, tableKey, dbTableName
+        columnMetadata: {},// column_definitions and key_value_store_active values for ("column", elementKey) of: none...
+        dataTableModel: {},// inverted and extended formDef.model for representing data store
+        formDef: formDef, 
+        formPath: formPath, 
+        instanceId: null, 
+        table_id: table_id
+        };
                             
     ctxt.append('initializeTables');
-    that.withDb($.extend({},ctxt,{success:function() {
+    var tmpctxt = $.extend({},ctxt,{success:function() {
                 ctxt.append('getAllTableMetaData.success');
                 // these values come from the current webpage
-                tlo = $.extend(tlo, protoTableMetadata);
-                // update tableId and qp
-                mdl.qp = tlo;
-                opendatakit.setCurrentTableId(tableId);
+                // update table_id and qp
+                mdl.formDef = tlo.formDef;
+                mdl.tableMetadata = tlo.tableMetadata;
+                mdl.columnMetadata = tlo.columnMetadata;
+                mdl.data = tlo.data;
+                opendatakit.setCurrentTableId(table_id);
                 opendatakit.setCurrentFormPath(formPath);
                 ctxt.success();
-            }}), function(transaction) {
+            }});
+    that.withDb(tmpctxt, function(transaction) {
                 // now insert records into these tables...
-                var ss = that.getDbTableNameStmt(tableId);
+                var ss = that._selectTableDefinitionsDataStmt(table_id);
+                ctxt.sqlStatement = ss;
                 transaction.executeSql(ss.stmt, ss.bind, function(transaction, result) {
-                    if (result.rows.length == 0 ) {
-                        // TODO: use something other than formId for the dbTableName...
-                        that._insertTableAndColumnProperties(transaction, tableId, protoTableMetadata.formId.value, protoTableMetadata.formTitle, formDef, tlo);
+                    var len = result.rows.length;
+                    if (len == 0 ) {
+                        // TODO: use something other than form_id for the dbTableName...
+                        that._insertTableAndColumnProperties(transaction, tmpctxt, tlo, true);
+                    } else if(len != 1) {
+                        throw new Error("getMetaData: multiple rows! " + name + " count: " + len);
                     } else {
-                        if(result.rows.length != 1) {
-                            throw new Error("getMetaData: multiple rows! " + name + " count: " + result.rows.length);
-                        } else {
-                            var rec = result.rows.item(0);
-                            var dbTableName = rec['VALUE'];
-                            mdl.dbTableName = dbTableName;
-                            mdl.model = formDef.model;
-                            that.coreGetAllTableMetadata(transaction, tableId, tlo);
-                        }
+                        // we have the table and column definitions in the database -- 
+                        // assume the formPath description exactly matches and just build the metadata
+                        // TODO: this does not verify that the database structure matches the
+                        // structure defined by the formPath.
+                        that._insertTableAndColumnProperties(transaction, tmpctxt, tlo, false);
                     }
                 });
             });
 },
-// save the given value under that name
-getDbTableNameStmt:function(tableId) {
-    return {
-        stmt : 'select * from keyValueStoreActive where TABLE_UUID=? and _KEY=?',
-        bind : [tableId, 'dbTableName']
-    };
+_clearPersistedFlag: function( dbKeyMap, listChildElementKeys) {
+    var i;
+    var f;
+    if ( listChildElementKeys != null ) {
+        for ( i = 0 ; i < listChildElementKeys.length ; ++i ) {
+            var f = listChildElementKeys[i];
+            var jsonType = dbKeyMap[f];
+            jsonType.isPersisted = false;
+            if ( jsonType.type == 'array' ) {
+                this._clearPersistedFlag(dbKeyMap, jsonType.listChildElementKeys);
+            } else if ( jsonType.type == 'object' ) {
+                this._clearPersistedFlag(dbKeyMap, jsonType.listChildElementKeys);
+            }
+        }
+    }
 },
-_insertTableAndColumnProperties:function(transaction, tableId, dbTableName, formTitle, formDef, tlo) {
+_flattenElementPath: function( dbKeyMap, elementPathPrefix, elementName, elementKeyPrefix, jsonType ) {
+    var fullPath;
+    var elementKey;
+    var i = 0;
+
+    // remember the element name...
+    jsonType.elementName = elementName;
+    // and the set is 'data' because it comes from the data model...
+    jsonType.elementSet = 'data';
+    
+    // update element path prefix for recursive elements
+    elementPathPrefix = (elementPathPrefix == null ) ? elementName : (elementPathPrefix + '.' + elementName);
+    // and our own element path is exactly just this prefix
+    jsonType.elementPath = elementPathPrefix;
+
+    // use the user's elementKey if specified
+    elementKey = jsonType.elementKey;
+
+    if ( elementKey != null ) {
+        // throw an error if the elementkey is longer than 64 characters
+        // or if it is already being used and not by myself...
+        if ( elementKey.length > 64 ) {
+            throw new Error("supplied elementKey is longer than 64 characters");
+        }
+        if ( dbKeyMap[elementKey] != null && dbKeyMap[elementKey] != jsonType ) {
+            throw new Error("supplied elementKey is already used (autogenerated?) for another model element");
+        }
+        if ( elementKey.charAt(0) != '_' ) {
+            throw new Error("supplied elementKey does not start with underscore");
+        }
+    }
+    
+    if ( elementKey == null ) {
+        // synthesize an element key...
+        elementKey = (( elementKeyPrefix == null ) ? ('_' + elementName) : (elementKeyPrefix + '_' + elementName));
+    }
+
+    // assume the primitive types are persisted.
+    // this will be updated if there is an outer array or object
+    // that persists itself (below).
+    if ( jsonType.type == 'string' || 
+            jsonType.type == 'number' || 
+            jsonType.type == 'integer' ||
+            jsonType.type == 'boolean' ) {
+        // these should be persisted...
+        jsonType.isPersisted = true;
+    }
+
+    // and whether or not we persist, we need to add this to the dbKeyMap
+    //
+    if ( elementKey.length > 64 ) {
+        // shorten by eliminating silent consonants and vowels...
+        elementKey = elementKey.replace(/aehiouy/,'');
+    }
+    if ( elementKey.length > 64 ) {
+        // remove leading characters...
+        elementKey = elementKey.substring(elementKey.length - 64);
+    }
+        
+    // find a not-yet-used element key
+    i = 0;
+    while ( dbKeyMap[elementKey] != null ) {
+        elementKey = elementKey.substr(0,60);
+        elementKey = elementKey + this._padWithLeadingZeros(i,4);
+        ++i;
+    }
+    // remember the elementKey we have chosen...
+    jsonType.elementKey = elementKey;
+    dbKeyMap[elementKey] = jsonType;
+
+    // handle the recursive structures...
+    if ( jsonType.type == 'array' ) {
+        // explode with subordinate elements
+        f = this._flattenElementPath( dbKeyMap, elementPathPrefix, 'items', elementKey, jsonType.items );
+        jsonType.listChildElementKeys = [ f.elementKey ];
+        jsonType.isPersisted = true;
+    } else if ( jsonType.type == 'object' ) {
+        // object...
+        var hasProperties = false;
+        var e;
+        var f;
+        var listChildElementKeys = [];
+        for ( e in jsonType.properties ) {
+            hasProperties = true;
+            f = this._flattenElementPath( dbKeyMap, elementPathPrefix, e, elementKey, jsonType.properties[e] );
+            listChildElementKeys.push(f.elementKey);
+        }
+        jsonType.listChildElementKeys = listChildElementKeys;
+        if ( !hasProperties ) {
+            jsonType.isPersisted = true;
+        }
+    }
+
+    if ( jsonType.isPersisted && (jsonType.listChildElementKeys != null)) {
+        // we have some sort of structure that is persisting
+        // clear the isPersisted tags on the nested elements
+        this._clearPersistedFlag(dbKeyMap, jsonType.listChildElementKeys);
+    }
+    return jsonType;
+},
+/**
+  writeDatabase = true if the database should be written. False if we are just building the metadata.
+ */
+_insertTableAndColumnProperties:function(transaction, ctxt, tlo, writeDatabase) {
     var that = this;
     var fullDef = {
-        keyValueStoreActive: [],
-        colProps: []
+        table_definitions: [],
+        key_value_store_active: [],
+        column_definitions: []
         };
 
     var displayColumnOrder = [];
-
-    // TODO: verify that dbTableName is not already in use...
-    var createTableCmd = 'CREATE TABLE IF NOT EXISTS "' + dbTableName + '"(id TEXT NOT NULL';
-    for ( var j = 0 ; j < this.dbTableMetadata.length ; ++j ) {
-        var f = this.dbTableMetadata[j];
-        createTableCmd = createTableCmd + ',' + f.key + " ";
-        if ( f.type == "string" ) {
-            createTableCmd = createTableCmd + "TEXT" + (f.isNullable ? " NULL" : " NOT NULL");
-        } else if ( f.type == "integer" ) {
-            createTableCmd = createTableCmd + "INTEGER" + (f.isNullable ? " NULL" : " NOT NULL");
-        } else if ( f.type == "number" ) {
-            createTableCmd = createTableCmd + "REAL" + (f.isNullable ? " NULL" : " NOT NULL");
-        } else if ( f.type == "boolean" ) {
-            createTableCmd = createTableCmd + "INTEGER" + (f.isNullable ? " NULL" : " NOT NULL");
-        } else if ( f.type == "object" ) {
-            createTableCmd = createTableCmd + "TEXT" + (f.isNullable ? " NULL" : " NOT NULL");
-        } else if ( f.type == "array" ) {
-            createTableCmd = createTableCmd + "TEXT" + (f.isNullable ? " NULL" : " NOT NULL");
-        } else {
-            alert("unhandled type");
-        }
+    
+    // TODO: synthesize dbTableName from some other source...
+    var dbTableName = '_' + opendatakit.getSetting(tlo.formDef, 'form_id');
+    // dataTableModel holds an inversion of the tlo.formDef.model
+    //
+    //  elementKey : jsonSchemaType
+    //
+    // with the addition of:
+    //    isPersisted : true if elementKey is a dbColumnName
+    //    elementPath : pathToElement
+    //    elementSet : 'data'
+    //    listChildElementKeys : ['key1', 'key2' ...]
+    //
+    // within the jsonSchemaType to be used to transform to/from
+    // the model contents and data table representation.
+    //    
+    var dataTableModel = {};
+    var f;
+    for ( f in that.dataTablePredefinedColumns ) {
+        dataTableModel[f] = that.dataTablePredefinedColumns[f];
+    }
+    
+    // go through the supplied tlo.formDef model
+    // and invert it into the dataTableModel
+    var jsonDefn;
+    for ( f in tlo.formDef.model ) {
+        displayColumnOrder.push(f);
+        jsonDefn = that._flattenElementPath( dataTableModel, null, f, null, tlo.formDef.model[f] );
     }
 
-    for ( var df in formDef.model ) {
-    
-        var collectElementName = df;
-        
-        displayColumnOrder.push(collectElementName);
-        
-        var collectDataTypeName;
-        
-        var defn = $.extend({key: collectElementName},formDef.model[df]);
-        var type = defn.type;
-        if ( type == 'integer' ) {
-            collectDataTypeName = 'integer';
-            createTableCmd += ',"' + collectElementName + '" INTEGER NULL';
-        } else if ( type == 'number' ) {
-            collectDataTypeName = 'number';
-            createTableCmd += ',"' + collectElementName + '" REAL NULL';
-        } else if ( type == 'string' ) {
-            collectDataTypeName = 'string';
-            createTableCmd += ',"' + collectElementName + '" TEXT NULL';
-        } else if ( type == 'image/*' ) {
-            collectDataTypeName = 'mimeUri';
-            createTableCmd += ',"' + collectElementName + '" TEXT NULL';
-        } else if ( type == 'audio/*' ) {
-            collectDataTypeName = 'mimeUri';
-            createTableCmd += ',"' + collectElementName + '" TEXT NULL';
-        } else if ( type == 'video/*' ) {
-            collectDataTypeName = 'mimeUri';
-            createTableCmd += ',"' + collectElementName + '" TEXT NULL';
-        } else {
-            // TODO: handle composite types...
-            collectDataTypeName = 'text';
-            createTableCmd += ',"' + collectElementName + '" TEXT NULL';
-        }
-        
+    // and now traverse the dataTableModel making sure all the
+    // elementSet: 'data' values have columnDefinitions entries.
+    //
+    for ( var dbColumnName in dataTableModel ) {
         // case: simple type
         // TODO: case: geopoint -- expand to different persistence columns
-    
-        fullDef.colProps.push( {
-            tableId: tableId,
-            elementKey: collectElementName,
-            elementName: collectElementName,
-            elementType: collectDataTypeName,
-            listChildElementKeys: null,
-            isPersisted: 1,
-            joinTableId: null,
-            joinElementKey: null,
-            displayVisible: 1,
-            displayName: collectElementName,
-            displayChoicesMap: null,
-            displayFormat: null,
-            smsIn: 1,
-            smsOut: 1,
-            smsLabel: null,
-            footerMode: '0'
-        } );
+        jsonDefn = dataTableModel[dbColumnName];
+        
+        if ( jsonDefn.elementSet == 'data' ) {
+            var surveyElementName = jsonDefn.elementName;
+            
+            fullDef.column_definitions.push( {
+                table_id: tlo.table_id,
+                element_key: dbColumnName,
+                element_name: jsonDefn.elementName,
+                element_type: (jsonDefn.elementType == null ? jsonDefn.type : jsonDefn.elementType),
+                list_child_element_keys : ((jsonDefn.listChildElementKeys == null) ? null : JSON.stringify(jsonDefn.listChildElementKeys)),
+                is_persisted : jsonDefn.isPersisted,
+                joins: null
+            } );
+            fullDef.key_value_store_active.push( {
+                table_id: tlo.table_id,
+                partition: "Column",
+                aspect: dbColumnName,
+                key: "displayVisible",
+                type: "boolean",
+                value: true
+            } );
+            fullDef.key_value_store_active.push( {
+                table_id: tlo.table_id,
+                partition: "Column",
+                aspect: dbColumnName,
+                key: "displayName",
+                type: "string",
+                value: surveyElementName
+            } );
+            fullDef.key_value_store_active.push( {
+                table_id: tlo.table_id,
+                partition: "Column",
+                aspect: dbColumnName,
+                key: "displayChoicesList",
+                type: "string",
+                value: ((jsonDefn.choicesList == null) ? null : JSON.stringify(tlo.formDef.choices[jsonDefn.choicesList]))
+            } );
+            fullDef.key_value_store_active.push( {
+                table_id: tlo.table_id,
+                partition: "Column",
+                aspect: dbColumnName,
+                key: "displayFormat",
+                type: "string",
+                value: jsonDefn.displayFormat
+            } );
+            fullDef.key_value_store_active.push( {
+                table_id: tlo.table_id,
+                partition: "Column",
+                aspect: dbColumnName,
+                key: "smsIn",
+                type: "boolean",
+                value: true
+            } );
+            fullDef.key_value_store_active.push( {
+                table_id: tlo.table_id,
+                partition: "Column",
+                aspect: dbColumnName,
+                key: "smsOut",
+                type: "boolean",
+                value: true
+            } );
+            fullDef.key_value_store_active.push( {
+                table_id: tlo.table_id,
+                partition: "Column",
+                aspect: dbColumnName,
+                key: "smsLabel",
+                type: "string",
+                value: null
+            } );
+            fullDef.key_value_store_active.push( {
+                table_id: tlo.table_id,
+                partition: "Column",
+                aspect: dbColumnName,
+                key: "footerMode",
+                type: "string",
+                value: '0'
+            } );
+        }
     }
-    createTableCmd += ');';
-    
-    // construct the kvPairs to insert into kvstore
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'dbTableName', _TYPE: 'string', VALUE: dbTableName } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'displayName', _TYPE: 'string', VALUE: formTitle } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'type', _TYPE: 'integer', VALUE: '0' } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'primeCols', _TYPE: 'string', VALUE: '' } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'sortCol', _TYPE: 'string', VALUE: '' } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'readAccessTid', _TYPE: 'string', VALUE: '' } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'writeAccessTid', _TYPE: 'string', VALUE: '' } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'syncTag', _TYPE: 'string', VALUE: '' } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'lastSyncTime', _TYPE: 'integer', VALUE: '-1' } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'coViewSettings', _TYPE: 'string', VALUE: '' } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'detailViewFile', _TYPE: 'string', VALUE: '' } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'summaryDisplayFormat', _TYPE: 'string', VALUE: '' } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'syncState', _TYPE: 'integer', VALUE: '' } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'transactioning', _TYPE: 'integer', VALUE: '' } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'colOrder', _TYPE: 'string', VALUE: JSON.stringify(displayColumnOrder) } );
-    fullDef.keyValueStoreActive.push( { TABLE_UUID: tableId, _KEY: 'ovViewSettings', _TYPE: 'string', VALUE: '' } );
 
-    transaction.executeSql(createTableCmd, [], function(transaction, result) {
-        that.fullDefHelper(transaction, true, 0, fullDef, tableId, dbTableName, formDef, tlo);
-    });
+    fullDef.table_definitions.push( { 
+        table_id: tlo.table_id, 
+        table_key: dbTableName, 
+        db_table_name: dbTableName, 
+        type: 'data', 
+        table_id_access_controls: null, 
+        sync_tag: "", 
+        last_sync_time: -1, 
+        sync_state: 'REST', 
+        transactioning: 0 } );
+
+    // construct the kvPairs to insert into kvstore
+    fullDef.key_value_store_active.push( { table_id: tlo.table_id, partition: "Table", aspect: "global", key: 'displayName', type: 'string', value: opendatakit.getSetting(tlo.formDef, 'form_title') } );
+    fullDef.key_value_store_active.push( { table_id: tlo.table_id, partition: "Table", aspect: "global", key: 'primeCols', type: 'string', value: '' } );
+    fullDef.key_value_store_active.push( { table_id: tlo.table_id, partition: "Table", aspect: "global", key: 'sortCol', type: 'string', value: '' } );
+    fullDef.key_value_store_active.push( { table_id: tlo.table_id, partition: "Table", aspect: "global", key: 'coViewSettings', type: 'string', value: '' } );
+    fullDef.key_value_store_active.push( { table_id: tlo.table_id, partition: "Table", aspect: "global", key: 'detailViewFile', type: 'string', value: '' } );
+    fullDef.key_value_store_active.push( { table_id: tlo.table_id, partition: "Table", aspect: "global", key: 'summaryDisplayFormat', type: 'string', value: '' } );
+    fullDef.key_value_store_active.push( { table_id: tlo.table_id, partition: "Table", aspect: "global", key: 'colOrder', type: 'string', value: JSON.stringify(displayColumnOrder) } );
+    fullDef.key_value_store_active.push( { table_id: tlo.table_id, partition: "Table", aspect: "global", key: 'ovViewSettings', type: 'string', value: '' } );
+
+    // get first property in fullDef -- we use native iteration ordering to step through the properties.
+    var tableToUpdate = null;
+    for ( var prop in fullDef ) {
+        tableToUpdate = prop;
+        break;
+    }
+
+    if ( writeDatabase ) {
+        var createTableCmd = this._createTableStmt(dbTableName, dataTableModel);
+        ctxt.sqlStatement = createTableCmd;
+        transaction.executeSql(createTableCmd.stmt, createTableCmd.bind, function(transaction, result) {
+            that.fullDefHelper(transaction, ctxt, tableToUpdate, 0, fullDef, dbTableName, dataTableModel, tlo);
+        });
+    } else {
+        // we don't need to write the database -- just update everything
+        mdl.dataTableModel = dataTableModel;
+        that.coreGetAllTableMetadata(transaction, ctxt, tlo);
+    }
 },
-fullDefHelper:function(transaction, insertColProps, idx, fullDef, tableId, dbTableName, formDef, tlo) {
+fullDefHelper:function(transaction, ctxt, tableToUpdate, idx, fullDef, dbTableName, dataTableModel, tlo) {
     var that = this;
-    var dbPropertyTableName = null;
     var row = null;
-    if ( insertColProps ) {
-        if ( fullDef.colProps.length > idx ) {
-            row = fullDef.colProps[idx];
-            dbPropertyTableName = 'colProps';
-        }
-        if ( row == null ) {
-            insertColProps = false;
-            idx = 0;
-        }
-    }
-    if ( !insertColProps ) {
-        if ( fullDef.keyValueStoreActive.length > idx ) {
-            row = fullDef.keyValueStoreActive[idx];
-            dbPropertyTableName = 'keyValueStoreActive';
-        }
-    }
     
-    // done if no row to process...
-    if ( row == null ) {
-        mdl.dbTableName = dbTableName;
-        mdl.model = formDef.model;
-        that.coreGetAllTableMetadata(transaction, tableId, tlo);
-        return;
+    for (;;) {
+        if ( fullDef[tableToUpdate].length > idx ) {
+            row = fullDef[tableToUpdate][idx];
+        }
+    
+        if ( row != null ) {
+            break;
+        }
+
+        // find the next table to insert records into...
+        var old = tableToUpdate;
+        tableToUpdate = null;
+        var found = false;
+        for ( var prop in fullDef ) {
+            if ( prop == old ) {
+                found = true; // get the table after this...
+            } else if ( found ) {
+                tableToUpdate = prop;
+                break;
+            }
+        }
+        
+        if ( tableToUpdate == null ) {
+            // end of the array -- we are done!
+            mdl.dataTableModel = dataTableModel;
+            that.coreGetAllTableMetadata(transaction, ctxt, tlo);
+            return;
+        }
+
+        // reset to the start of the insert array
+        idx = 0;
     }
     
     // assemble insert statement...
-    var insertStart = 'REPLACE INTO ' + dbPropertyTableName + ' (';
+    var insertStart = 'REPLACE INTO ' + tableToUpdate + ' (';
     var insertMiddle = ') VALUES (';
     var bindArray = [];
     for ( var col in row ) {
@@ -1085,7 +1628,7 @@ fullDefHelper:function(transaction, insertColProps, idx, fullDef, tableId, dbTab
     var insertCmd = insertStart.substr(0,insertStart.length-1) + insertMiddle.substr(0,insertMiddle.length-1) + ');';
     
     transaction.executeSql(insertCmd, bindArray, function(transaction, result) {
-        that.fullDefHelper(transaction, insertColProps, idx+1, fullDef, tableId, dbTableName, formDef, tlo);
+        that.fullDefHelper(transaction, ctxt, tableToUpdate, idx+1, fullDef, dbTableName, dataTableModel, tlo);
     });
 },
 getDataValue:function(name) {
@@ -1093,51 +1636,95 @@ getDataValue:function(name) {
     var v = mdl.data;
     for ( var i = 0 ; i < path.length ; ++i ) {
         v = v[path[i]];
-        if ( v == null ) return v;
+        if ( v == null ) {
+            return null;
+        }
     }
-    return v.value;
+    return v;
 },
-setData:function(ctxt, name, datatype, value) {
+setData:function(ctxt, name, value) {
     ctxt.append('setData: ' + name);
     var that = this;
     that.putData($.extend({}, ctxt, {success: function() {
             that.cacheAllData(ctxt, opendatakit.getCurrentInstanceId());
-        }}), name, datatype, value);
+        }}), name, value);
 },
 getInstanceMetaDataValue:function(name) {
     var path = name.split('.');
     var v = mdl.metadata;
     for ( var i = 0 ; i < path.length ; ++i ) {
         v = v[path[i]];
-        if ( v == null ) return v;
+        if ( v == null ) {
+            return v;
+        }
     }
-    return v.value;
+    return v;
 },
-setInstanceMetaData:function(ctxt, name, datatype, value) {
+setInstanceMetaData:function(ctxt, name, value) {
     ctxt.append('setInstanceMetaData: ' + name);
     var that = this;
     that.putInstanceMetaData($.extend({}, ctxt, {success: function() {
                 that.cacheAllData(ctxt, opendatakit.getCurrentInstanceId());
-            }}), name, datatype, value);
+            }}), name, value);
 },
+// TODO: table metadata is under mdl.tableMetadata
+// TODO: column metadata is under mdl.columnMetadata
 getTableMetaDataValue:function(name) {
     var path = name.split('.');
-    var v = mdl.qp;
+    var v = mdl.tableMetadata;
     for ( var i = 0 ; i < path.length ; ++i ) {
         v = v[path[i]];
-        if ( v == null ) return v;
+        if ( v == null ) {
+            return v;
+        }
     }
-    return v.value;
+    return v;
 },
-setTableMetaData:function(ctxt, name, datatype, value) {
-    ctxt.append('setTableMetaData: ' + name);
+getAllDataValues:function() {
+    return mdl.data;
+},
+purge:function(ctxt) {
     var that = this;
-    that.putTableMetaData($.extend({}, ctxt, {success: function() {
-                that.cacheAllTableMetaData(ctxt);
-            }}), name, datatype, value);
-},
-discoverTableFromTableId:function(ctxt, tableId) {
+    ctxt.append('database.purge.initiated');
+    var tableSets = [];
+    that.withDb( $.extend({},ctxt,{success:function() {
+            // OK we have tableSets[] constructed.
+            // Now drop all those tables and delete contents from metadata tables
+            that.withDb( ctxt, function(transaction) {
+                var i, sql, tableEntry;
+                for ( i = 0 ; i < tableSets.length ; ++i ) {
+                    tableEntry = tableSets[i];
+                    sql = that._dropTableStmt(tableEntry.dbTableName);
+                    ctxt.sqlStatement = sql;
+                    transaction.executeSql(sql.stmt, sql.bind);
+                }
+                sql = that._deleteEntireTableContentsTableStmt('key_value_store_active');
+                ctxt.sqlStatement = sql;
+                transaction.executeSql(sql.stmt, sql.bind);
+                
+                sql = that._deleteEntireTableContentsTableStmt('column_definitions');
+                ctxt.sqlStatement = sql;
+                transaction.executeSql(sql.stmt, sql.bind);
 
+                sql = that._deleteEntireTableContentsTableStmt('table_definitions');
+                ctxt.sqlStatement = sql;
+                transaction.executeSql(sql.stmt, sql.bind);
+            });
+        }}), function(transaction) {
+        var is = that._selectAllTableDbNamesAndIdsDataStmt();
+        ctxt.sqlStatement = is;
+        transaction.executeSql(is.stmt, is.bind, function(transaction, result) {
+            var len = result.rows.length;
+            var i, row, tableEntry;
+            for ( i = 0 ; i < len ; ++i ) {
+                row = result.rows.item(i);
+                tableEntry = { dbTableName: row['db_table_name'], table_id: row['table_id'] };
+                tableSets.push(tableEntry);
+            }
+        });
+    });
+},
+discoverTableFromTableId:function(ctxt, table_id) {
 }
 };
 });

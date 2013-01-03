@@ -75,7 +75,7 @@
 			
 			var event = {'data': data, 'epoch': epoch, 'recordId': recordId};
 			console.log(JSON.stringify(event));
-			_eventRepo.addEvent(JSON.stringify(event));
+			window.extRepo.addEvent(JSON.stringify(event));
 			document.location.reload();
 		}
 

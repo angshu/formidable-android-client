@@ -9,14 +9,14 @@
 *    Displays pop-up dialogs and toasts.
 *    Displays the options dialog for changing languages and navigations.
 */
-define(['opendatakit','backbone','jquery','handlebars','text!templates/screen.handlebars' ,'jqmobile'], 
-function(opendatakit, Backbone, $, Handlebars, screenTemplate) {
+define(['opendatakit','backbone','jquery','handlebars','text!templates/navbarAndPopups.handlebars' ,'jqmobile'], 
+function(opendatakit,  Backbone,  $,       Handlebars,  navbarAndPopups) {
 
 return Backbone.View.extend({
     el: "body",
     className: "current",
     instance_id:123,
-    template: Handlebars.compile(screenTemplate),
+    template: Handlebars.compile(navbarAndPopups),
     swipeTimeStamp: -1,
     swipeEnabled: true,//Swipe can be disabled to prevent double swipe bug
     renderContext:{},
@@ -26,10 +26,13 @@ return Backbone.View.extend({
         "click .odk-options-btn": "openOptions",
         "click .languageMenu": "openLanguagePopup",
         "click .language": "setLanguage",
+        "click .ignore-changes-and-exit": "ignoreChanges",
+        "click .save-incomplete-and-exit": "saveChanges",
         "swipeleft .swipeForwardEnabled": "gotoNextScreen",
         "swiperight .swipeBackEnabled": "gotoPreviousScreen",
         "pagechange": "handlePagechange",
-        "dragstart img": "disableImageDrag"
+        "dragstart img": "disableImageDrag",
+        "click #ok-btn": "closeScreenPopup"
     },
     noPreviousPage: function(ctxt) {
         ctxt.append("screenManager.noPreviousPage");
@@ -48,23 +51,11 @@ return Backbone.View.extend({
         }
         ctxt.success();
     },
-    initialize: function(ctxt){
+    initialize: function(){
         this.controller = this.options.controller;
         this.currentPageEl = $('[data-role=page]');
         console.assert(this.currentPageEl.length === 1);
         var that = this;
-        /*
-        var f = function() {
-            requirejs(['text!templates/screen.handlebars'], function(source) {
-                    that.template = Handlebars.compile(source);
-            }, function(err) {
-                if ( err.requireType == "timeout" ) {
-                    setTimeout( f, 100);
-                }
-            });
-        };
-        f();
-        */
     },
     cleanUpScreenManager: function(ctxt){
         this.swipeEnabled = true;
@@ -72,14 +63,26 @@ return Backbone.View.extend({
         this.displayWaiting(ctxt);
     },
     displayWaiting: function(ctxt){
+        var that = this;
         ctxt.append("screenManager.displayWaiting", (this.prompt == null) ? "promptIdx: null" : ("promptIdx: " + this.prompt.promptIdx));
-        var $e;
-        $e = $('.current');
-        $e.html('<span>Please wait...</span>');
-        $e = $('.odk-toolbar');
-        $e.html('');
-        $e = $('.odk-nav');
-        $e.html('');
+        // update to be like a simulated page change...
+        var $page = $('<div>');
+        $page.attr('data-role', 'page');
+        $page.attr('data-theme', "d");
+        $page.attr('data-content-theme', "d");
+        $page.html('<div data-role="header" class="odk-toolbar"></div>' +
+                    '<div data-role="content" class="odk-scroll">' + 
+                      '<div class="current"><span>Please wait...</span></div>' + 
+                    '</div><div data-role="footer" class="odk-nav"></div>');
+        that.previousPageEl = that.currentPageEl;
+        that.currentPageEl = $page;
+        that.prompt = null;
+        that.$el.append(that.currentPageEl);
+        that.savedCtxt = ctxt;
+        $.mobile.changePage(that.currentPageEl, $.extend({
+            changeHash: false,
+            transition: 'none'
+        }));
     },
     setPrompt: function(ctxt, prompt, jqmAttrs){
         if(!jqmAttrs){
@@ -87,7 +90,7 @@ return Backbone.View.extend({
         }
         var that = this;
         that.renderContext = {
-            formTitle: prompt.database.getTableMetaDataValue('formTitle'),
+            form_title: opendatakit.getSettingValue('form_title'),
             instanceName: prompt.database.getInstanceMetaDataValue('instanceName'),
             locales: that.controller.getFormLocales(),
             showHeader: true,
@@ -123,22 +126,6 @@ return Backbone.View.extend({
                     //so this flag automatically disables nav in that case.
                     that.renderContext.enableNavigation = false;
                 }
-                /*
-                console.log(that.renderContext);
-                // work through setting the forward/backward enable flags
-                if ( that.renderContext.enableNavigation === undefined ) {
-                    that.renderContext.enableNavigation = true;
-                }
-                if ( that.renderContext.enableForwardNavigation === undefined ) {
-                    that.renderContext.enableForwardNavigation = 
-                        that.renderContext.enableNavigation;
-                }
-                if ( that.renderContext.enableBackNavigation === undefined ) {
-                    that.renderContext.enableBackNavigation = 
-                        that.renderContext.enableNavigation &&
-                        that.controller.hasPromptHistory(ctxt);
-                }
-                */
                 // TODO: tell existing prompt it is inactive (e.g,. semaphore)...
                 if(that.prompt) {
                     that.prompt.undelegateEvents();
@@ -155,10 +142,10 @@ return Backbone.View.extend({
                         that.swipeEnabled = true;
                         ctxt.success();
                     },
-                    failure: function() {
+                    failure: function(m) {
                         alert('Failure in screenManager.setPrompt');
                         that.swipeEnabled = true;
-                        ctxt.failure();
+                        ctxt.failure(m);
                     }
                 });
                 $.mobile.changePage(that.currentPageEl, $.extend({
@@ -187,9 +174,11 @@ return Backbone.View.extend({
         that.swipeEnabled = false;
         that.controller.gotoNextScreen($.extend({},ctxt,{
                 success:function(){
-                    that.swipeEnabled = true; ctxt.success();
-                },failure:function(){
-                    that.swipeEnabled = true; ctxt.failure();
+                    that.swipeEnabled = true; 
+                    ctxt.success();
+                },failure:function(m){
+                    that.swipeEnabled = true; 
+                    ctxt.failure(m);
                 }}));
         return false;
     },
@@ -217,11 +206,29 @@ return Backbone.View.extend({
         that.swipeEnabled = false;
         that.controller.gotoPreviousScreen($.extend({},ctxt,{
                 success:function(){ 
-                    that.swipeEnabled = true; ctxt.success();
-                },failure:function(){
-                    that.swipeEnabled = true; ctxt.failure();
+                    that.swipeEnabled = true; 
+                    ctxt.success();
+                },failure:function(m){
+                    that.swipeEnabled = true; 
+                    ctxt.failure(m);
                 }}));
         return false;
+    },
+    ignoreChanges: function(evt) {
+        var that = this;
+        var ctxt = that.controller.newContext(evt);
+        ctxt.append('screenManager.ignoreChanges', ((that.prompt != null) ? ("px: " + that.prompt.promptIdx) : "no current prompt"));
+        that.controller.ignoreAllChanges($.extend({},ctxt,{success: function() {
+                that.controller.leaveInstance(ctxt);
+            }}));
+    },
+    saveChanges: function(evt) {
+        var that = this;
+        var ctxt = that.controller.newContext(evt);
+        ctxt.append('screenManager.saveChanges', ((that.prompt != null) ? ("px: " + that.prompt.promptIdx) : "no current prompt"));
+        that.controller.saveAllChanges($.extend({},ctxt,{success: function() {
+                that.controller.leaveInstance(ctxt);
+            }}), false);
     },
     openOptions: function(evt) {
         $( "#optionsPopup" ).popup( "open" );
@@ -240,9 +247,13 @@ return Backbone.View.extend({
         this.controller.setLocale(ctxt, $(evt.target).attr("id"));
     },
     showScreenPopup: function(msg) {
-        var messageHtml = Handlebars.compile("{{#substitute}}{{localize message}}{{/substitute}}")(msg);
-        $( "#screenPopup" ).find('.message').html(messageHtml);
-        $( "#screenPopup" ).popup( "open" );
+        var $screenPopup = $( "#screenPopup" );
+        var messageHtml = Handlebars.compile("<h3>{{#substitute}}{{localize message}}{{/substitute}}</h3>")(msg);
+        $screenPopup.find('.message').html(messageHtml);
+        $screenPopup.popup( "open" );
+    },
+    closeScreenPopup: function() {
+        $( "#screenPopup" ).popup( "close" );
     },
     showSpinnerOverlay: function(msg) {
         $.mobile.loading( 'show', {
@@ -259,7 +270,9 @@ return Backbone.View.extend({
         
         if ( ctxt != null ) {
             ctxt.append('screenManager.handlePageChange.linked');
-            this.prompt.delegateEvents();
+            if ( this.prompt ) {
+                this.prompt.delegateEvents();
+            }
             if(this.previousPageEl){
                 var pg = this.previousPageEl;
                 this.previousPageEl = null;
@@ -267,10 +280,10 @@ return Backbone.View.extend({
             }
             ctxt.success();
         } else {
-            ctxt = that.controller.newContext(evt);
+            ctxt = this.controller.newContext(evt);
             ctxt.append('screenManager.handlePageChange.error');
             this.swipeEnabled = true;
-            ctxt.failure();
+            ctxt.failure({message: "Internal error. Unexpected triggering of page change event."});
         }
     },
     disableImageDrag: function(evt){

@@ -2,12 +2,14 @@
 /**
  * This is a random collection of methods that don't quite belong anywhere.
  *
- * A set of utilities, some of which wrap the Java interface (collect.js), and others
+ * A set of utilities, some of which wrap the Java interface (shim.js), and others
  * provide useful parsing or interpretation of localization details.
  *
  */
 define(['mdl'],function(mdl) {
 return {
+    saved_complete: 'COMPLETE',
+    saved_incomplete: 'INCOMPLETE',
     baseDir: '',
     databaseSettings: null,
     platformInfo: null,
@@ -19,11 +21,10 @@ return {
     /**
      * immediate return: platformInfo structure from ODK
      */
-    getPlatformInfo:function(ctxt) {
-        // fetch these settings from ODK Collect if running under that context
+    getPlatformInfo:function() {
+        // fetch these settings from ODK Survey (the container app)
         if ( this.platformInfo == null ) {
-            var jsonString = collect.getPlatformInfo();
-            ctxt.append('opendatakit.getPlatformInfo', jsonString);
+            var jsonString = shim.getPlatformInfo();
             this.platformInfo = JSON.parse(jsonString);
         }
         return this.platformInfo;
@@ -32,40 +33,14 @@ return {
     /**
      * immediate return: databaseSettings structure from ODK
      */
-    getDatabaseSettings:function(ctxt) {
-        // fetch these settings from ODK Collect if running under that context
+    getDatabaseSettings:function() {
+        // fetch these settings from ODK Survey (the container app)
         if ( this.databaseSettings == null ) {
-            var jsonString = collect.getDatabaseSettings();
-            ctxt.append('opendatakit.getDatabaseSettings', jsonString);
+            var jsonString = shim.getDatabaseSettings();
+            console.log('opendatakit.getDatabaseSettings: ' + jsonString);
             this.databaseSettings = JSON.parse(jsonString);
         }
         return this.databaseSettings;
-    },
-
-    /**
-     * immediate return: URI for this media file
-     */
-    asUri:function(ctxt,mediaPath,widget,attribute) {
-        if ( mediaPath == null ) return null;
-        
-        var info = this.getPlatformInfo(ctxt);
-        if ( info.container != 'Android' ) return mediaPath;
-        
-        if ( mediaPath[0] == '.' ) {
-            mediaPath = info.appPath + mediaPath;
-        }
-                
-        if ( mediaPath.substr(0,7) == "file://" ) {
-            mediaPath = mediaPath.substr(7);
-        }
-
-        if ( widget != 'img' ) {
-            if ( attribute == 'poster' ) {
-                
-                return "file://127.0.0.1" + mediaPath;
-            }
-        }
-        return "file://127.0.0.1" + mediaPath;
     },
 
     genUUID:function() {
@@ -80,7 +55,7 @@ return {
     
     getHashString:function(formPath, instanceId, pageRef) {
         if ( formPath == null ) {
-            formPath = collect.getBaseUrl();
+            formPath = shim.getBaseUrl() + "/";
             return '#formPath=' + escape(formPath);
         }
         var qpl =
@@ -90,6 +65,14 @@ return {
         return qpl;
     },
 
+	setCurrentFormDef:function(formDef) {
+		mdl.formDef = formDef;
+	},
+	
+	getCurrentFormDef:function() {
+		return mdl.formDef;
+	},
+	
     setCurrentFormPath:function(formPath) {
         mdl.formPath = formPath;
     },
@@ -100,18 +83,21 @@ return {
     
     setCurrentInstanceId:function(instanceId) {
         mdl.instanceId = instanceId;
+		// Update container so that it can save media and auxillary data
+		// under different directories...
+		shim.setInstanceId(instanceId);
     },
     
     getCurrentInstanceId:function() {
         return mdl.instanceId;
     },
     
-    setCurrentTableId:function(tableId) {
-        mdl.tableId = tableId;
+    setCurrentTableId:function(table_id) {
+        mdl.table_id = table_id;
     },
     
     getCurrentTableId:function() {
-        return mdl.tableId;
+        return mdl.table_id;
     },
     
     /**
@@ -136,7 +122,7 @@ return {
 
     localize:function(textOrLangMap, locale) {
         if(_.isUndefined(textOrLangMap)) {
-            return 'undefined';
+            return 'text_undefined';
         }
         if(_.isString(textOrLangMap)) {
             return textOrLangMap;
@@ -149,7 +135,7 @@ return {
             alert("Could not localize object. See console:");
             console.error("Non localizable object:");
             console.error(textOrLangMap);
-            return 'invalidOjbect';
+            return 'no_suitable_language_mapping_defined';
         }
     },
     
@@ -172,8 +158,7 @@ return {
      * use this if you know the formDef is valid within the mdl...
      */
     getSettingValue:function(key) {
-        var formDef = mdl.qp.formDef.value;
-        return this.getSetting(formDef, key);
+        return this.getSetting(this.getCurrentFormDef(), key);
     },
     /*
         Form locales are specified by the translations available on the 
@@ -188,13 +173,13 @@ return {
     getFormLocales:function(formDef) {
         var locales = [];
         // assume all the locales are specified by the title...
-        var formTitle = this.getSetting(formDef, 'formTitle');
-        if ( _.isUndefined(formTitle) || _.isString(formTitle) ) {
+        var form_title = this.getSetting(formDef, 'form_title');
+        if ( _.isUndefined(form_title) || _.isString(form_title) ) {
             // no internationalization -- just default choice
             return [ 'default' ];
         }
         // we have localization -- find all the tags
-        for ( var f in formTitle ) {
+        for ( var f in form_title ) {
             var translations = this.getSetting(formDef, f );
             if ( translations == null ) {
                 translations = f;
@@ -205,15 +190,17 @@ return {
     },
     
     /*
-        The default locale is specified by the 'defaultLocale' setting.
-        If this is not present, the first locale in the formTitle array
+        The default locale is specified by the 'default_locale' setting.
+        If this is not present, the first locale in the form_title array
         is used (this likely does not have any bearing to the order 
         of the translations in the XLSForm). Otherwise, if there are no
-        formTitle translations, then 'default' is returned.
+        form_title translations, then 'default' is returned.
      */
     getDefaultFormLocale:function(formDef) {
-        var locale = this.getSetting(formDef, 'defaultLocale');
-        if ( locale != null ) return locale;
+        var locale = this.getSetting(formDef, 'default_locale');
+        if ( locale != null ) {
+			return locale;
+		}
         var locales = this.getFormLocales(formDef);
         if ( locales.length > 0 ) {
             return locales[0].name;
@@ -224,13 +211,15 @@ return {
      use this when the formDef is known to be stored in the mdl
      */
     getDefaultFormLocaleValue:function() {
-        var formDef = mdl.qp.formDef.value;
-        return this.getDefaultFormLocale(formDef);
+        return this.getDefaultFormLocale(this.getCurrentFormDef());
     },
     
     getFormLocalesValue:function() {
-        var formDef = mdl.qp.formDef.value;
-        return this.getFormLocales(formDef);
+        return this.getFormLocales(this.getCurrentFormDef());
+    },
+
+    getMdl:function() {
+        return mdl;
     }
 };
 });

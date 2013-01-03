@@ -72,5 +72,18 @@ window.collect = window.collect || {
     },
     ignoreAllChangesFailed: function( formId, instanceId ) {
         alert("notify container that ignore all changes FAILED.");
+    },
+    notifyListeners: function(formData) {
+        if (window.extRepo) {
+            console.log(JSON.stringify(formData));
+            window.extRepo.addEvent(JSON.stringify(formData));
+        }
+        console.log("****** start: model Properties ****** ");
+        if (formData.model) {
+            for (var attr in formData.model) {
+                console.log(attr);    
+            }
+        }
+        console.log("****** end: model Properties ****** ");
     }
 };

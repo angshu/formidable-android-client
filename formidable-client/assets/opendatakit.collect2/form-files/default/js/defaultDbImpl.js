@@ -497,15 +497,6 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 		    for ( f in tlo.formDef.model ) {
 		        displayColumnOrder.push(f);
 		        jsonDefn = _flattenElementPath( dataTableModel, null, f, null, tlo.formDef.model[f] );
-		        fullDef.column_definitions.push( {
-		            table_id: tlo.table_id,
-		            element_key: jsonDefn.elementKey,
-		            element_name: jsonDefn.elementName,
-		            element_type: (jsonDefn.elementType == null ? jsonDefn.type : jsonDefn.elementType),
-		            list_child_element_keys : ((jsonDefn.listChildElementKeys == null) ? null : JSON.stringify(jsonDefn.listChildElementKeys)),
-		            is_persisted : jsonDefn.isPersisted,
-		            joins: null
-		        } );
 		    }
 
 		    // and now traverse the dataTableModel making sure all the
@@ -524,8 +515,8 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 		                element_key: dbColumnName,
 		                element_name: jsonDefn.elementName,
 		                element_type: (jsonDefn.elementType == null ? jsonDefn.type : jsonDefn.elementType),
-		                list_child_element_keys : ((jsonDefn.type == 'array') ? jsonDefn.items : jsonDefn.properties),
-		                is_persisted : true,
+		                list_child_element_keys : ((jsonDefn.listChildElementKeys == null) ? null : JSON.stringify(jsonDefn.listChildElementKeys)),
+                		is_persisted : jsonDefn.isPersisted,
 		                joins: null
 		            } );
 		            fullDef.key_value_store_active.push( {
@@ -853,10 +844,8 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 	                min = Number(value.substr(idx+1,2));
 	                sec = Number(value.substr(idx+3,2));
 	                msec = Number(value.substr(idx+6,3));
-	                zsign = value.substr(idx+10,1);
-	                zhh = Number(value.substr(idx+11,2));
-	                zmm = Number(value.substr(idx+13,2));
-	                value = new Date(Date.UTC(0,0,0,hh,min,sec,msec));
+	                value = new Date();
+					value.setHours(hh,min,sec,msec);
 	                return value;
 	            } else {
 	                value = JSON.parse(value);
@@ -1187,24 +1176,26 @@ define(['jquery', 'opendatakit'], function($, opendatakit) {
 	                        _padWithLeadingZeros(msec,3) + 'Z';
 	                return value;
 	            } else if ( jsonType.elementType == 'time' ) {
-	                yyyy = value.getUTCFullYear();
-	                mm = value.getUTCMonth(); // months are 0-11
-	                if ( mm != 0 || yyyy != 1970 ) {
-	                    throw new Error("time value is not based upon Jan 1, 1970");
-	                }
-	                // TODO: this is broken w.r.t. leap years
-	                dd = value.getUTCDate();
-	                hh = value.getUTCHours() + 24*(dd);
-	                min = value.getUTCMinutes();
-	                sec = value.getUTCSeconds();
-	                msec = value.getUTCMilliseconds();
-	                zsign = 'Z';
-	                zhh = '';
-	                zmm = '';
-	                value = _padWithLeadingZeros(hh,2) + ':' +
-	                        _padWithLeadingZeros(min,2) + ':' +
-	                        _padWithLeadingZeros(sec,2) + '.' +
-	                        _padWithLeadingZeros(msec,3) + 'Z';
+	                // strip off the time-of-day and drop the rest...
+	                hh = value.getHours();
+	                min = value.getMinutes();
+	                sec = value.getSeconds();
+	                msec = value.getMilliseconds();
+					var n = value.getTimezoneOffset();
+					var sign = false;
+					if ( n < 0) {
+						n = -n;
+						sign = true;
+					}
+					zhh = Math.floor(n/60);
+					zmm = n - zhh*60;
+	                zsign = (sign ? '+' : '-');
+	                value = that._padWithLeadingZeros(hh,2) + ':' +
+	                        that._padWithLeadingZeros(min,2) + ':' +
+	                        that._padWithLeadingZeros(sec,2) + '.' +
+	                        that._padWithLeadingZeros(msec,3) + zsign +
+							that._padWithLeadingZeros(zhh,2) +
+							that._padWithLeadingZeros(zmm,2);
 	                return value;
 	            } else if ( !jsonType.properties ) {
 	                // this is an opaque BLOB w.r.t. database layer

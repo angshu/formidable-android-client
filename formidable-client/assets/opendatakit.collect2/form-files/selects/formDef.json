@@ -1,15 +1,15 @@
 {
     "model": {
-        "i1": {
+        "smartphone": {
             "type": "string"
         }, 
-        "i3": {
+        "color": {
             "type": "string"
         }, 
-        "i2": {
+        "laptop": {
             "type": "string"
         }, 
-        "city": {
+        "tablet": {
             "type": "string"
         }, 
         "country": {
@@ -18,7 +18,7 @@
         "region": {
             "type": "string"
         }, 
-        "color": {
+        "desktop": {
             "type": "string"
         }, 
         "state": {
@@ -38,14 +38,14 @@
         {
             "callback": "context.query.results ? _.map(context.query.results.place, function(place){\nplace.label = place.name;\nreturn place;\n}) : []", 
             "_rowNum": 2, 
-            "name": "states", 
+            "name": "countries", 
             "uri": "\"https://query.yahooapis.com/v1/public/yql?format=json&q=\" +  encodeURIComponent(\"select * from geo.countries where place='North America'\")"
         }, 
         {
             "callback": "context.query.results ? _.map(context.query.results.place, function(place){\nplace.label = place.name;\nreturn place;\n}) : []", 
             "_rowNum": 3, 
-            "name": "cities", 
-            "uri": "\"https://query.yahooapis.com/v1/public/yql?format=json&q=\" +  encodeURIComponent(\"select * from geo.states where place='\" + data('state') + \"'\")"
+            "name": "states", 
+            "uri": "\"https://query.yahooapis.com/v1/public/yql?format=json&q=\" +  encodeURIComponent(\"select * from geo.states where place='\" + data('country') + \"'\")"
         }, 
         {
             "callback": "_.chain(context).pluck('region').uniq().map(function(region){\nreturn {name:region, label:region};\n}).value()", 
@@ -60,7 +60,7 @@
             "uri": "\"regions.csv\""
         }, 
         {
-            "callback": "[context]", 
+            "callback": "context", 
             "_rowNum": 6, 
             "name": "content_provider_test", 
             "uri": "\"content://org.opendatakit.FileContentProviderExample/\""
@@ -68,19 +68,19 @@
     ], 
     "survey": [
         {
-            "name": "state", 
+            "name": "country", 
             "type": "select_one", 
-            "param": "states", 
+            "param": "countries", 
             "_rowNum": 2, 
             "comments": "Cascading select using remote data", 
-            "label": "Choose a state:"
+            "label": "Choose a country:"
         }, 
         {
-            "name": "city", 
+            "name": "state", 
             "_rowNum": 3, 
             "type": "select_one", 
-            "param": "cities", 
-            "label": "Choose a city:"
+            "param": "states", 
+            "label": "Choose a state:"
         }, 
         {
             "_rowNum": 4, 
@@ -115,35 +115,49 @@
             "type": "screen", 
             "prompts": [
                 {
-                    "appearance": "inline", 
-                    "name": "i1", 
                     "_rowNum": 10, 
-                    "type": "select_one", 
-                    "param": "yes_no", 
-                    "label": "Choose one:"
+                    "type": "note", 
+                    "param": null, 
+                    "label": "Which devices do you use?"
                 }, 
                 {
                     "appearance": "inline", 
-                    "name": "i2", 
+                    "name": "desktop", 
                     "_rowNum": 11, 
                     "type": "select_one", 
                     "param": "yes_no", 
-                    "label": "Choose one:"
+                    "label": "Desktop computer"
                 }, 
                 {
                     "appearance": "inline", 
-                    "name": "i3", 
+                    "name": "laptop", 
                     "_rowNum": 12, 
                     "type": "select_one", 
                     "param": "yes_no", 
-                    "label": "Choose one:"
+                    "label": "Laptop computer"
+                }, 
+                {
+                    "appearance": "inline", 
+                    "name": "smartphone", 
+                    "_rowNum": 13, 
+                    "type": "select_one", 
+                    "param": "yes_no", 
+                    "label": "Smartphone"
+                }, 
+                {
+                    "appearance": "inline", 
+                    "name": "tablet", 
+                    "_rowNum": 14, 
+                    "type": "select_one", 
+                    "param": "yes_no", 
+                    "label": "Tablet"
                 }
             ], 
             "_rowNum": 9
         }, 
         {
             "name": "color", 
-            "_rowNum": 14, 
+            "_rowNum": 16, 
             "type": "select_one_with_other", 
             "param": "colors", 
             "label": "What is your favorite color?"
@@ -152,7 +166,7 @@
             "condition": "selected(data('color'), 'teal')", 
             "type": "note", 
             "param": null, 
-            "_rowNum": 15, 
+            "_rowNum": 17, 
             "comments": "selected function with arguement not included in choices.", 
             "label": "Teal is a good choice."
         }, 
@@ -161,14 +175,14 @@
             "inputAttributes": {
                 "data-type": "horizontal"
             }, 
-            "_rowNum": 16, 
+            "_rowNum": 18, 
             "type": "select_one", 
             "param": "yes_no", 
             "label": "Horizontal select example."
         }, 
         {
             "name": "region", 
-            "_rowNum": 17, 
+            "_rowNum": 19, 
             "type": "select_one", 
             "param": "regions_csv", 
             "label": "Choose a region:"
@@ -177,7 +191,7 @@
             "name": "country", 
             "choice_filter": "context.region === data('region')", 
             "appearance": "dropdown", 
-            "_rowNum": 18, 
+            "_rowNum": 20, 
             "param": "countries_csv", 
             "label": "Choose a country:", 
             "type": "select_one"
@@ -185,10 +199,11 @@
         {
             "name": "cp_test", 
             "hint": "You will need to install a content provider app for the query to work. There is an example app available here: https://github.com/nathanathan/FileContentProviderExample", 
-            "_rowNum": 19, 
-            "type": "select_one", 
+            "_rowNum": 21, 
             "param": "content_provider_test", 
-            "label": "This demos a content provider query."
+            "label": "This demos a content provider query.", 
+            "type": "select_one", 
+            "condition": false
         }
     ], 
     "settings": [

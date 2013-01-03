@@ -255,24 +255,9 @@
             "condition": "not(selected(data('examples'), 'label_features'))"
         }, 
         {
-            "name": "name", 
-            "hint": "Please use your full name", 
-            "_rowNum": 14, 
-            "type": "text", 
-            "param": null, 
-            "label": "Enter your name"
-        }, 
-        {
-            "hint": "Handlebars templates allow labels to change depending on the values previously entered.", 
-            "type": "note", 
-            "_rowNum": 15, 
-            "param": null, 
-            "label": "{{#if name}}\nHello {{name}}!\n{{else}}\nName not entered.\n{{/if}}\nThis label is a handlesbars template."
-        }, 
-        {
             "hint": "So can <b>hints</b>", 
             "type": "note", 
-            "_rowNum": 16, 
+            "_rowNum": 14, 
             "param": null, 
             "label": "<u>Labels</u> <i>can</i> contain <span style=\"color:red;\">HTML</span>"
         }, 
@@ -280,9 +265,24 @@
             "type": "note", 
             "image": "img/dolphin.png", 
             "audio": "audio/carrioncrow.mp3", 
-            "_rowNum": 17, 
+            "_rowNum": 15, 
             "param": null, 
             "label": "Labels can contain &lt;img&gt; and &lt;audio&gt; HTML tags, but it is often easier to add media via the image and audio columns."
+        }, 
+        {
+            "name": "name", 
+            "hint": "It will be used in the next question.", 
+            "_rowNum": 16, 
+            "type": "text", 
+            "param": null, 
+            "label": "Enter your name"
+        }, 
+        {
+            "hint": "Handlebars templates allow labels to change depending on the values previously entered.", 
+            "type": "note", 
+            "_rowNum": 17, 
+            "param": null, 
+            "label": "<h3>\nThis label uses Handlesbars template features:\n</h3>\n{{#if name}}\nHello {{name}}!\n{{else}}\nName not entered.\n{{/if}}"
         }, 
         {
             "type": "label", 
@@ -321,9 +321,10 @@
         }, 
         {
             "param": null, 
+            "hint": "This prompt shows how to use dates in fomulas.", 
             "_rowNum": 23, 
             "type": "note", 
-            "condition": "data('born').getDay() === now().getDay() && data('born').getMonth() === now().getMonth()", 
+            "condition": "data('born') && data('born').getDay() === now().getDay() && data('born').getMonth() === now().getMonth()", 
             "label": "Happy Birthday!"
         }, 
         {
@@ -331,7 +332,7 @@
             "_rowNum": 24, 
             "type": "time", 
             "param": null, 
-            "label": "What time is it?"
+            "label": "What time do you usually wake up?"
         }, 
         {
             "name": "datetime", 
@@ -415,8 +416,42 @@
             "param": "media_end"
         }, 
         {
-            "name": "specialTemplateTest", 
+            "param": null, 
             "_rowNum": 39, 
+            "type": "note", 
+            "condition": "selected(data('examples'), 'prompt_link')", 
+            "label": "<a href=\"{{promptLink \"unreachable\"}}\">This is a link to another prompt</a>"
+        }, 
+        {
+            "type": "label", 
+            "_rowNum": 40, 
+            "param": "prompt_link_return"
+        }, 
+        {
+            "type": "goto", 
+            "_rowNum": 41, 
+            "param": "unreachable_end"
+        }, 
+        {
+            "name": "unreachable", 
+            "_rowNum": 42, 
+            "type": "note", 
+            "param": null, 
+            "label": "This prompt is unreachable except by links."
+        }, 
+        {
+            "type": "goto", 
+            "_rowNum": 43, 
+            "param": "prompt_link_return"
+        }, 
+        {
+            "type": "label", 
+            "_rowNum": 44, 
+            "param": "unreachable_end"
+        }, 
+        {
+            "name": "specialTemplateTest", 
+            "_rowNum": 45, 
             "param": null, 
             "label": "This is a custom template that uses D3.js:", 
             "type": "text", 
@@ -431,7 +466,7 @@
                 "type": "range", 
                 "min": 1
             }, 
-            "_rowNum": 40, 
+            "_rowNum": 46, 
             "param": null, 
             "label": "How would you rate this survey?", 
             "default": 5, 
@@ -491,6 +526,11 @@
                 "_rowNum": 20, 
                 "name": "custom_template", 
                 "label": "custom template"
+            }, 
+            {
+                "_rowNum": 21, 
+                "name": "prompt_link", 
+                "label": "prompt linking"
             }
         ], 
         "yesno": [

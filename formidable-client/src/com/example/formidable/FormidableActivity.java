@@ -1,18 +1,8 @@
 package com.example.formidable;
 
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -21,8 +11,17 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebStorage.QuotaUpdater;
 import android.webkit.WebView;
-
 import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @SuppressLint("SetJavaScriptEnabled")
 public class FormidableActivity extends Activity {
@@ -38,24 +37,28 @@ public class FormidableActivity extends Activity {
 	@Override
     public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-        initialize();       
-        RecordRepository repository = eventSource.getRepository();
-        
-        String recordId = newId();     
-        repository.put(createSimpleEvent(3, recordId, "surname:Bhuwalka"));     
-        repository.put(createSimpleEvent(2, recordId, "name:Angshu"));
-        repository.put(createSimpleEvent(1, recordId, "name:Chris"));
-        
-        //check search functionality
-        repository.put(createSimpleEvent(1, newId(), "name:Vivek", "surname:Singh"));
-        		
-		Map<String, Object> record = repository.get(recordId);
-		System.out.println(String.format("Name: %s %s", record.get("name"), record.get("surname")));
-        
+        initialize();
+//        RecordRepository repository = this.eventSource.getRepository();
+//
+//        String recordId = newId();
+//        repository.put(createSimpleEvent(3, recordId, "surname:Bhuwalka"));
+//        repository.put(createSimpleEvent(2, recordId, "name:Angshu"));
+//        repository.put(createSimpleEvent(1, recordId, "name:Chris"));
+//
+//        //check search functionality
+//        repository.put(createSimpleEvent(1, newId(), "name:Vivek", "surname:Singh"));
+//
+//		Map<String, Object> record = repository.get(recordId);
+//		System.out.println(String.format("Name: %s %s", record.get("name"), record.get("surname")));
+//
+        Intent intent = getIntent();
+        String formName = intent.getStringExtra("formName");
         WebView view = initView();
-        view.loadUrl(formateUrl("opendatakit.collect2/form-files/default/index.html"));
-        search(eventSource, "name:vivek AND surname:singh");
+        view.loadUrl(formateUrl("opendatakit.collect2/form-files/default/index.html#formPath=../"+formName+"/&pageRef=1"));
+        //search(eventSource, "name:Angshu AND surname:Bhuwalka");
     }
+
+
 	
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -74,7 +77,6 @@ public class FormidableActivity extends Activity {
 					QuotaUpdater quotaUpdater) {
       		  quotaUpdater.updateQuota(estimatedDatabaseSize * 2);
       	  }
-      	   
 
       	  public boolean onConsoleMessage(ConsoleMessage cm) {
       	    Log.d("MyApplication", cm.message() + " -- From line "
@@ -138,7 +140,7 @@ public class FormidableActivity extends Activity {
 					//we should probably create something Event.parse(JSOBObject) to get a Event object out of json
 					//and return an array of Event Objects. parse method can extract attributes like
 					//epoch, docid, revid, and all the elements in the data element recursively
-					//System.out.println("search result record => %s".format(result.toString()));
+					System.out.println("search result record => %s".format(result.toString()));
 				}
 			}
 			

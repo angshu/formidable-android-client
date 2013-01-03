@@ -1,4 +1,6 @@
-package com.example.formidable;
+package com.thoughtworks.ict4h.formidable;
+
+import com.thoughtworks.ict4h.formidable.FormidableActivity;
 
 import android.test.ActivityInstrumentationTestCase2;
 
@@ -9,13 +11,13 @@ import android.test.ActivityInstrumentationTestCase2;
  * <p/>
  * To run this test, you can type:
  * adb shell am instrument -w \
- * -e class com.example.formidable.FormidableActivityTest \
- * com.example.formidable.tests/android.test.InstrumentationTestRunner
+ * -e class com.thoughtworks.ict4h.formidable.FormidableActivityTest \
+ * com.thoughtworks.ict4h.formidable.tests/android.test.InstrumentationTestRunner
  */
 public class FormidableActivityTest extends ActivityInstrumentationTestCase2<FormidableActivity> {
 
     public FormidableActivityTest() {
-        super("com.example.formidable", FormidableActivity.class);
+        super("com.thoughtworks.ict4h.formidable", FormidableActivity.class);
     }
 
 }

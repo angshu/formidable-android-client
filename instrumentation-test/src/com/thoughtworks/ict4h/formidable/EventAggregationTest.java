@@ -1,7 +1,10 @@
-package com.example.formidable;
+package com.thoughtworks.ict4h.formidable;
 
 import java.util.Arrays;
 import java.util.Collections;
+
+import com.thoughtworks.ict4h.formidable.Event;
+import com.thoughtworks.ict4h.formidable.EventAggregation;
 
 import junit.framework.TestCase;
 

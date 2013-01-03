@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- package name must be unique so suffix with "tests" so package loader doesn't ignore us -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.example.formidable.tests"
+          package="com.thoughtworks.ict4h.formidable.tests"
           android:versionCode="1"
           android:versionName="1.0">
           
@@ -16,12 +16,12 @@
     </application>
     <!--
     This declares that this application uses the instrumentation test runner targeting
-    the package of com.example.formidable.  To run the tests use the command:
-    "adb shell am instrument -w com.example.formidable.tests/android.test.InstrumentationTestRunner"
+    the package of com.thoughtworks.ict4h.formidable.  To run the tests use the command:
+    "adb shell am instrument -w com.thoughtworks.ict4h.formidable.tests/android.test.InstrumentationTestRunner"
     -->
     <instrumentation android:name="android.test.InstrumentationTestRunner"
-                     android:targetPackage="com.example.formidable"
-                     android:label="Tests for com.example.formidable"/>
+                     android:targetPackage="com.thoughtworks.ict4h.formidable"
+                     android:label="Tests for com.thoughtworks.ict4h.formidable"/>
 
     <uses-permission android:name="android.permission.INTERNET"/>
 

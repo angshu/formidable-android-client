@@ -1,4 +1,4 @@
-package com.example.formidable;
+package com.thoughtworks.ict4h.formidable;
 
 import android.test.InstrumentationTestCase;
 import android.util.Log;
@@ -8,6 +8,7 @@ import com.couchbase.touchdb.TDView;
 import com.couchbase.touchdb.ektorp.TouchDBHttpClient;
 import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
 import com.couchbase.touchdb.support.FileDirUtils;
+import com.thoughtworks.ict4h.formidable.CurrentState;
 
 import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
@@ -36,7 +37,7 @@ abstract class FormidableTestCase extends InstrumentationTestCase {
 
     private String getFilesDir() {
         //return getInstrumentation().getContext().getFilesDir().getAbsolutePath();
-        return "/data/data/com.example.formidable/files";
+        return "/data/data/com.thoughtworks.ict4h.formidable/files";
     }
 
 	private void startServer() {

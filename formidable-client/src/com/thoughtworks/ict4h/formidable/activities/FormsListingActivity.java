@@ -1,4 +1,4 @@
-package com.example.formidable.activities;
+package com.thoughtworks.ict4h.formidable.activities;
 
 import android.app.ListActivity;
 import android.content.Intent;
@@ -6,8 +6,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import com.example.formidable.FormidableActivity;
-import com.example.formidable.R;
+import com.thoughtworks.ict4h.formidable.R;
+import com.thoughtworks.ict4h.formidable.FormidableActivity;
 
 import java.io.IOException;
 import java.io.InputStream;

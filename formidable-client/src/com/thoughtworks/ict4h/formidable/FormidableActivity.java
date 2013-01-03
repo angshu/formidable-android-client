@@ -1,4 +1,4 @@
-package com.example.formidable;
+package com.thoughtworks.ict4h.formidable;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -12,6 +12,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebStorage.QuotaUpdater;
 import android.webkit.WebView;
 import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
+import com.thoughtworks.ict4h.formidable.R;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -96,7 +98,7 @@ public class FormidableActivity extends Activity {
         
 //        String databasePath = this.getApplicationContext().getDir("database", MODE_PRIVATE).getPath();
 //        System.out.println("****** Database path = " + databasePath);
-        settings.setDatabasePath("/data/data/com.example.formidable/databases");
+        settings.setDatabasePath("/data/data/com.thoughtworks.ict4h.formidable/databases");
         
         settings.setDomStorageEnabled(true);
         settings.setGeolocationDatabasePath(Configuration.getGeolocDbPath());

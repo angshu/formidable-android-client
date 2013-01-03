@@ -1,8 +1,11 @@
-package com.example.formidable;
+package com.thoughtworks.ict4h.formidable;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import com.thoughtworks.ict4h.formidable.Event;
+import com.thoughtworks.ict4h.formidable.RecordRepository;
 
 public class FormidableTest extends FormidableTestCase {
 

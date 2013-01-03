@@ -1,10 +1,10 @@
-package com.example.formidable.activities;
+package com.thoughtworks.ict4h.formidable.activities;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import com.example.formidable.R;
+import com.thoughtworks.ict4h.formidable.R;
 
 public class LoginActivity extends Activity{
     @Override

@@ -1,10 +1,10 @@
-package com.example.formidable;
+package com.thoughtworks.ict4h.formidable;
 
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
 public class Configuration {
-	private static final String BUNDLE_NAME = "com.example.formidable.config"; //$NON-NLS-1$
+	private static final String BUNDLE_NAME = "com.thoughtworks.ict4h.formidable.config"; //$NON-NLS-1$
 
 	private static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle
 			.getBundle(BUNDLE_NAME);
@@ -29,7 +29,7 @@ public class Configuration {
 	}
 
 	public static String getGeolocDbPath() {
-		return "/data/data/com.example.formidable/databases";
+		return "/data/data/com.thoughtworks.ict4h.formidable/databases";
 	}
 
 	public static String getIndexerFuncDescr() {

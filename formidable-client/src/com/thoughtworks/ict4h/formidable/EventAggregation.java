@@ -1,4 +1,4 @@
-package com.example.formidable;
+package com.thoughtworks.ict4h.formidable;
 
 import java.util.Collections;
 import java.util.HashMap;

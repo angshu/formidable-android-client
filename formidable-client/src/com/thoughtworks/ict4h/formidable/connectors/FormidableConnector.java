@@ -1,4 +1,4 @@
-package com.example.formidable.connectors;
+package com.thoughtworks.ict4h.formidable.connectors;
 
 import org.ektorp.CouchDbInstance;
 import org.ektorp.impl.ObjectMapperFactory;

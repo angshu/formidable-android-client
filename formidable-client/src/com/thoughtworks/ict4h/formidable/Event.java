@@ -11,7 +11,7 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 	private static final long serialVersionUID = 1L;
 	
 	@JsonProperty
-	private int epoch;
+	private long epoch;
 	
 	@JsonProperty
 	private String recordId;
@@ -20,13 +20,13 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 	@JsonProperty
 	private Map<String, Object> data = new HashMap<String, Object>();
 	
-	public Event(int epoch, String recordId, Map<String, Object> data) {
+	public Event(long epoch, String recordId, Map<String, Object> data) {
 		this.epoch = epoch;
 		this.recordId = recordId;
         this.data.putAll(data);
 	}
 	
-	public Event(int epoch, String recordId) {
+	public Event(long epoch, String recordId) {
 		this.epoch = epoch;
 		this.recordId = recordId;
 	}
@@ -35,7 +35,7 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 		this.data.put(key, value);
 	}
 	
-	public int getEpoch() {
+	public long getEpoch() {
 		return epoch;
 	}
 	
@@ -55,11 +55,24 @@ public class Event extends CouchDbDocument implements Comparable<Event> {
 
     //@Override
     public int compareTo(Event another) {
-        return this.epoch - another.epoch;
+    	Long thisEpoch = new Long(this.epoch);
+    	Long thatEpoch = new Long(another.epoch);
+    	return thisEpoch.compareTo(thatEpoch);
+        //return this.epoch - another.epoch;
     }
 
 	public Object get(String key) {
 		return data.get(key);
+	}
+	
+	public static Event createSimpleEvent(int epoch, String recordId,
+			String... arguments) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		for (String arg : arguments) {
+			String[] parts = arg.split(":");
+			map.put(parts[0], parts[1]);
+		}
+		return new Event(epoch, recordId, map);
 	}
 	
 	

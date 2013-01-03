@@ -219,32 +219,6 @@ public class FormidableActivity extends Activity {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			
-//			try {
-//				JSONObject json = new JSONObject(eventProps);
-//				String epoch = json.optString("epoch");
-//				String recordId = json.optString("recordId");
-//				if (!validStr(epoch)) {
-//					epoch = "1";
-//				}
-//				if (!validStr(recordId)) {
-//					recordId = newId();
-//				}
-//				
-//				Event event = new Event(Integer.valueOf(epoch), recordId);
-//				
-//				JSONObject data = json.getJSONObject("data");
-//				JSONArray names = data.names();
-//				for (int i=0; i<names.length(); i++) {
-//					String key = (String) names.get(i);
-//					String value = (String) data.get(key);
-//					event.addAttribute(key, value);
-//					//System.out.println(String.format("%s = %s", key, value));
-//				}
-//				repository.put(event);
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//			}
 		}		
 		
     }

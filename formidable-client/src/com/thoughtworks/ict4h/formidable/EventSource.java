@@ -7,32 +7,35 @@ import org.ektorp.CouchDbInstance;
 import org.ektorp.ReplicationCommand;
 import org.ektorp.impl.StdCouchDbInstance;
 
-import android.content.Context;
 import android.util.Log;
 
 import com.couchbase.touchdb.TDDatabase;
 import com.couchbase.touchdb.TDServer;
 import com.couchbase.touchdb.TDView;
 import com.couchbase.touchdb.ektorp.TouchDBHttpClient;
+import com.couchbase.touchdb.router.TDURLStreamHandlerFactory;
 
 public class EventSource {
+	
+	static {
+		TDURLStreamHandlerFactory.registerSelfIgnoreError();
+	}
 
 	private TDServer localServer;
 	private CouchDbConnector events;
-	private SearchAgent searchAgent;
-
-	public EventSource(Context context) {
-		super();
-		startServer(context);    
-	    startClient();
-	}
+	private SearchAgent searchAgent;	
 	
+	public EventSource(String filesDir) {
+		super();
+		startServer(filesDir);
+		startClient();
+	}
+
 	public SearchAgent getSearchAgent() {
 		return searchAgent;
 	}
 	
-	private void startServer(Context context) {
-        String filesDir = context.getFilesDir().getAbsolutePath();
+	private void startServer(String filesDir) {
         try {
             localServer = new TDServer(filesDir);
             startViews();

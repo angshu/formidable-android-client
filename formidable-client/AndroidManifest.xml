@@ -40,6 +40,7 @@
                 android:name=".FormidableActivity"
                 android:label="@string/title_activity_main" >
         </activity>
+        <service android:name="com.thoughtworks.ict4h.formidable.service.StorageService"></service>
     </application>
 
 </manifest>

@@ -7,14 +7,20 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import android.util.Log;
+
 import com.thoughtworks.ict4h.formidable.Event;
 import com.thoughtworks.ict4h.formidable.RecordRepository;
 
 public class OdkSurveyBridge {
-	private RecordRepository repository;
-
-	public OdkSurveyBridge(RecordRepository repository) {
-		this.repository = repository;
+	private RepositoryLocator locator;
+	
+	public interface RepositoryLocator {
+		RecordRepository getRepository();
+	}
+	
+	public OdkSurveyBridge(RepositoryLocator locator) {
+		this.locator = locator;
 	}
 
 	public void addEvent(String event) {
@@ -64,7 +70,11 @@ public class OdkSurveyBridge {
 			formData.put("instanceName", metadataJson.optString("instanceName"));
 			long epoch = (new Date()).getTime();
 			Event formEvent = new Event(epoch, formId, formData);
-			repository.put(formEvent);
+			RecordRepository recordRepo = locator.getRepository();
+			if (recordRepo != null) {
+				Log.i("ODKSurveyBridge", "****** adding event *********");
+				recordRepo.put(formEvent);
+			}
 
 		} catch (Exception e) {
 			e.printStackTrace();

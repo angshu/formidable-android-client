@@ -1,25 +1,31 @@
 package com.thoughtworks.ict4h.formidable.activities;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+
 import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import com.thoughtworks.ict4h.formidable.R;
+
 import com.thoughtworks.ict4h.formidable.FormidableActivity;
+import com.thoughtworks.ict4h.formidable.R;
+import com.thoughtworks.ict4h.formidable.service.StorageService;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
+public class FormsListingActivity extends ListActivity {    
 
-public class FormsListingActivity extends ListActivity{
-
-    private ArrayList<String> folderList;
+	private ArrayList<String> folderList;
+    
+    private Intent storageSvcIntent = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        this.storageSvcIntent = new Intent(this, StorageService.class);
+        startService(storageSvcIntent);
         this.setContentView(R.layout.forms_list);
         getListView().setOnItemClickListener( new AdapterView.OnItemClickListener() {
             @Override
@@ -29,6 +35,12 @@ public class FormsListingActivity extends ListActivity{
         });
         reloadList();
     }
+    
+    @Override
+	protected void onDestroy() {
+    	stopService(storageSvcIntent);
+		super.onDestroy();
+	}
 
     private void onFormSelected(int formIndex) {
         String formName = folderList.get(formIndex);
